@@ -207,6 +207,7 @@ void loop() {
     char c = Serial.read();
     if (c == audio::START) { audio::beginStream(); break; }   // the rest is speech
     if (c == 0x05) { Serial.println(F("MASOUD")); continue; }  // "who are you?" for port finding
+    if (c == 't') { audio::testTone(); Serial.println(F("TEST TONE: 1 kHz for 1.5 s")); continue; }
     if (face.command(c)) {
       Serial.print(F("> ")); Serial.print(c);
       if (c == 'x') Serial.print(face.autoMode() ? F(" auto on") : F(" auto off"));

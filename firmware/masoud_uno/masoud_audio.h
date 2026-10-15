@@ -61,6 +61,8 @@ const Note S_LOVE[] PROGMEM = {N(800, 1000, 140, TRI, 170), N(0, 0, 40, REST, 0)
 const Note S_SUSPICIOUS[] PROGMEM = {N(500, 520, 120, TRI, 170), N(0, 0, 90, REST, 0), N(480, 700, 160, TRI, 180), {0, 0, 0, 0, 0}};
 const Note S_DIZZY[] PROGMEM = {N(600, 1100, 120, TRI, 180), N(1100, 500, 120, TRI, 180), N(500, 1000, 120, TRI, 180),
                                 N(1000, 450, 120, TRI, 170), N(450, 900, 140, TRI, 160), {0, 0, 0, 0, 0}};
+// Speaker check: 1.5 s of full-swing 1 kHz square, the loudest this wiring can make.
+const Note S_TEST[] PROGMEM = {N(1000, 1000, 1500, SQUARE, 255), {0, 0, 0, 0, 0}};
 #undef N
 // In emo::Mood order; NEUTRAL is silent.
 const Note *const MOOD_SOUND[] = {nullptr, S_HAPPY, S_SAD, S_ANGRY, S_SURPRISED, S_SLEEPY, S_LOVE, S_SUSPICIOUS, S_DIZZY};
@@ -104,7 +106,7 @@ static inline uint8_t synth() {
   acc += inc; inc += dinc;
   if (wave == REST) return 128;
   uint8_t ph = acc >> 16;
-  int16_t v = wave == SQUARE ? (ph < 128 ? 90 : -90) : (ph < 128 ? (int16_t)ph * 2 - 128 : 383 - (int16_t)ph * 2);
+  int16_t v = wave == SQUARE ? (ph < 128 ? 127 : -127) : (ph < 128 ? (int16_t)ph * 2 - 128 : 383 - (int16_t)ph * 2);
   uint8_t env = done < 64 ? done * 4 : left < 128 ? left * 2 : 255;   // soft attack and release, no clicks
   return 128 + (int8_t)(((v * env) >> 8) * vol >> 8);
 }
@@ -151,6 +153,8 @@ static void play(const Note *n) {
 }
 static void playMood(uint8_t mood) { if (mood < sizeof MOOD_SOUND / sizeof MOOD_SOUND[0]) play(MOOD_SOUND[mood]); }
 static void hello() { play(S_HELLO); }
+// Plays even with chirps off: it is how you check the speakers are wired.
+static void testTone() { if (streaming) return; ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { song = S_TEST; left = 0; } }
 
 // Loudest sample since the last call, 0..128 (drives the talking eyes).
 static uint8_t takePeak() { uint8_t p; ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { p = peak; peak = 0; } return p; }

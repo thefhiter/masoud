@@ -42,7 +42,13 @@ def to_u8(path, pitch):
     if pitch != 1.0:   # higher voice, same speed
         filters += [f"asetrate=24000*{pitch}", "aresample=24000", f"atempo={1 / pitch:.4f}"]
     filters += ["highpass=f=300", "lowpass=f=3400",   # what 28 mm speakers can actually play
-                "dynaudnorm=f=150:g=15", "volume=0.9"]
+                # as loud as possible without an amp: squash the dynamics so every
+                # syllable sits near full swing, then limit so nothing clips hard
+                # (measured: average talking level 34/127 vs 3/127 before; Whisper
+                # still transcribes it word for word)
+                "dynaudnorm=f=75:g=5:p=0.95:m=30",
+                "acompressor=threshold=-40dB:ratio=20:attack=1:release=40:makeup=24",
+                "volume=6", "alimiter=limit=0.98:attack=1:release=20:level=false"]
     cmd = ["ffmpeg", "-loglevel", "error", "-i", str(path), "-af", ",".join(filters),
            "-ar", str(RATE), "-ac", "1", "-f", "u8", "-"]
     data = subprocess.run(cmd, capture_output=True, check=True).stdout

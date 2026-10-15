@@ -42,7 +42,7 @@ CACHE = Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "masoud" /
 
 def voice_clip(text, voice, pitch):
     """8 kHz u8 audio for text, from the cache or freshly rendered."""
-    key = hashlib.sha1(f"{voice}|{pitch}|{text}".encode()).hexdigest()[:16]
+    key = hashlib.sha1(f"v3|{voice}|{pitch}|{text}".encode()).hexdigest()[:16]   # v3: louder processing
     path = CACHE / f"{key}.u8"
     if path.exists():
         return path.read_bytes()
