@@ -89,8 +89,19 @@ struct Panel {
     command(0x2C);
   }
   void run(uint16_t color, uint16_t n) {
+    // Back-to-back bytes, no call per byte: the loop bookkeeping happens
+    // while the previous byte is still shifting out (16 cycles at 8 MHz).
+    if (!n) return;
     uint8_t hi = color >> 8, lo = color;
-    while (n--) { spiWrite(hi); spiWrite(lo); }
+    SPDR = hi;
+    for (;;) {
+      while (!(SPSR & _BV(SPIF))) {}
+      SPDR = lo;
+      if (--n == 0) break;
+      while (!(SPSR & _BV(SPIF))) {}
+      SPDR = hi;
+    }
+    while (!(SPSR & _BV(SPIF))) {}
   }
   void row() { audio::pump(); }   // keep streamed speech flowing mid-frame (a row is ~2 ms)
   void end() {

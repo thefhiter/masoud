@@ -179,31 +179,39 @@ class Face {
     Seg seg[24];
     for (int16_t y = win[1]; y <= win[3]; y++) {
       sink.row();
-      float yc = y + 0.5f;
+      int16_t yc = 2 * y + 1;             // this row's center, in half pixels
       uint8_t n = 0;
-      for (uint8_t s = 0; s < 2; s++) {
-        if (eyes[s].on && y >= eyes[s].bx[1] && y <= eyes[s].bx[3]) n = eyeRow(eyes[s], yc, seg, n);
+      for (uint8_t s = 0; s < 2; s++)       // left eye then right eye: already in x order
+        if (eyes[s].on && y >= eyes[s].bx[1] && y <= eyes[s].bx[3]) n = eyeRuns(eyes[s], yc, seg, n);
+      uint8_t eyeRunCount = n;
+      for (uint8_t s = 0; s < 2; s++) {     // extras go only where no eye run is
         if (blush[s].on && y >= blush[s].bx[1] && y <= blush[s].bx[3]) n = blushRow(blush[s], yc, seg, n);
-        if (zs[s].on && y >= zs[s].bx[1] && y <= zs[s].bx[3]) n = zRow(zs[s], yc, seg, n);
+        if (zs[s].on && y >= zs[s].bx[1] && y <= zs[s].bx[3]) n = zRow(zs[s], y + 0.5f, seg, n);
       }
+      n = clipExtras(seg, eyeRunCount, n);
       emitRow(sink, seg, n, win[0], win[2] + 1);
     }
     sink.end();
   }
 
  private:
+  // Everything a row needs, in half pixels (pixel centers are odd numbers).
   struct EyeDraw {
     bool on, heart, happyCut, glints;
-    float cx, cy, w, h, r, top, bottom, xl, xr, dL, dR, lidK, lidMax;
-    float ecy, erx, ery, iery, ieryH, ieryG;   // happy arch ellipse (inverse radii: no divisions per row)
-    float hs;                           // heart size
-    float gTop, gIh;                    // gradient: top y and 1/height
-    float tr, tg, tb, dr, dg, db;       // gradient: top color and (bottom - top)
+    int16_t cx, cy, top, bot, xl, xr, r, dL, dR, lidMax;
+    int32_t lidK;                         // Q8: x per unit of lid depth
+    int16_t ecy, erx, ery;                // happy arch ellipse
+    uint16_t eratio[3];                   // its rx / ry (Q8), per layer
+    int16_t hs;                           // heart size
+    uint16_t tk[3];                       // heart V slope (Q8), per layer
+    int16_t gTop; uint16_t gInv;          // gradient: t8 = (y - gTop) * gInv >> 8
+    uint8_t tr, tg, tb; int16_t dr, dg, db;
     uint16_t glow, halo, glint;
-    float g1x, g1y, g1rx, g1iry, g1ry, g2x, g2y, g2r, g2ir;
-    int16_t bx[4];
+    int16_t g1x, g1y, g1rx, g1ry, g2x, g2y, g2r;
+    uint16_t g1ratio;
+    int16_t bx[4];                        // bounding box in pixels
   };
-  struct BlushDraw { bool on; float cx, cy, rx, ry, iry; uint16_t color; int16_t bx[4]; };
+  struct BlushDraw { bool on; int16_t cx, cy, rx, ry; uint16_t ratio, color; int16_t bx[4]; };
   struct ZDraw { bool on; float x, y, s; uint16_t color; int16_t bx[4]; };
 
   Eye eye_[2];
@@ -267,8 +275,36 @@ class Face {
     }
   }
 
-  // Per-frame setup: geometry, colors and bounding boxes, so rows only
-  // do additions, multiplications and the odd sqrt.
+  // ---- drawing in half-pixel integers ----------------------------------------
+  // The Uno has no FPU: one float sqrt costs ~30 us and the glow face needs
+  // hundreds per frame. So each frame the float geometry is converted once to
+  // half-pixel integers (pixel centers are the odd numbers), and rows use only
+  // integer adds, multiplies and a 16-bit integer square root.
+
+  static int16_t h2(float v) { return (int16_t)(v * 2 + 16384.5f) - 16384; }   // round(2 * v)
+
+  // Integer square root, rounded to nearest (not floored: shapes keep their size).
+  static uint8_t isqrt16(uint16_t n) {
+    uint16_t res = 0, bit = 1u << 14, m = n;
+    while (bit > m) bit >>= 2;
+    while (bit) {
+      if (m >= res + bit) { m -= res + bit; res = (res >> 1) + bit; } else res >>= 1;
+      bit >>= 2;
+    }
+    return (uint8_t)(m > res ? res + 1 : res);   // m = n - res^2; round up past res + 0.5
+  }
+
+  // Half-width of an ellipse at vertical offset dy (half px), or -1 outside.
+  // ratio = rx / ry in Q8, so rows need no division.
+  static int16_t ellipseHW(int16_t dy, int16_t ry, uint16_t ratio) {
+    if (ry <= 0 || dy <= -ry || dy >= ry) return -1;
+    uint16_t s = isqrt16((uint16_t)((int32_t)ry * ry - (int32_t)dy * dy));
+    return (int16_t)(((uint32_t)s * ratio) >> 8);
+  }
+
+  static uint16_t q8(int16_t num, int16_t den) { return den > 0 && num > 0 ? (uint16_t)(((int32_t)num << 8) / den) : 0; }
+
+  // Per-frame setup: float geometry and colors -> half-pixel integers.
   void prepareEye(uint8_t s, EyeDraw &d, BlushDraw &b) {
     const Eye &e = eye_[s];
     // looking around: shift, and the eye on the side you look toward grows a bit
@@ -284,65 +320,70 @@ class Face {
       cx += cosf(a) * 8 * e.dizzy;
       cy += sinf(a) * 8 * e.dizzy;
     }
-    d.cx = cx; d.cy = cy;
+    d.cx = h2(cx); d.cy = h2(cy);
     d.glow = rgb565(e.red * 0.16f, e.green * 0.16f, e.blue * 0.16f);   // light spilling out, fading
     d.halo = rgb565(e.red * 0.46f, e.green * 0.46f, e.blue * 0.46f);
     d.glint = rgb565(e.red + (255 - e.red) * 0.85f, e.green + (255 - e.green) * 0.85f, e.blue + (255 - e.blue) * 0.85f);
     // lit from the top: a little white at the top, deeper at the bottom
-    d.tr = e.red + (255 - e.red) * 0.22f; d.tg = e.green + (255 - e.green) * 0.22f; d.tb = e.blue + (255 - e.blue) * 0.22f;
-    d.dr = e.red * 0.68f - d.tr; d.dg = e.green * 0.68f - d.tg; d.db = e.blue * 0.68f - d.tb;
+    d.tr = clamp8(e.red + (255 - e.red) * 0.22f); d.tg = clamp8(e.green + (255 - e.green) * 0.22f);
+    d.tb = clamp8(e.blue + (255 - e.blue) * 0.22f);
+    d.dr = (int16_t)clamp8(e.red * 0.68f) - d.tr; d.dg = (int16_t)clamp8(e.green * 0.68f) - d.tg;
+    d.db = (int16_t)clamp8(e.blue * 0.68f) - d.tb;
     d.on = true;
     d.glints = e.dizzy < 0.5f && mood_ != ANGRY;   // no sparkle when dizzy or angry
 
     if (e.heart > 0.5f) {
       float size = w * 1.18f * e.heart * (1 + 0.08f * sinf(time_ * 10));  // pulsing heart
       d.heart = true; d.happyCut = false;
-      d.hs = size;
-      d.gTop = cy - size * 0.40f; d.gIh = 1 / (size * 0.85f);
-      d.g1x = cx - size * 0.27f; d.g1y = cy - size * 0.17f; d.g1rx = size * 0.075f; d.g1ry = size * 0.06f;
-      d.g1iry = 1 / d.g1ry; d.g2r = 0;
+      d.hs = h2(size);
+      for (uint8_t l = 0; l < 3; l++) {   // V slope per layer: half-width at the top / height
+        int16_t sz = d.hs + 2 * (int16_t)(l * 4);
+        d.tk[l] = q8(sz >> 1, ((sz * 115) >> 8) + ((sz * 26) >> 8));
+      }
+      d.gTop = h2(cy - size * 0.40f); d.gInv = (uint16_t)(65535 / (h2(size * 0.85f) | 1));
+      d.g1x = h2(cx - size * 0.27f); d.g1y = h2(cy - size * 0.17f);
+      d.g1rx = h2(size * 0.075f) + 1; d.g1ry = h2(size * 0.06f) + 1; d.g1ratio = q8(d.g1rx, d.g1ry); d.g2r = 0;
       setBox(d.bx, cx - size * 0.53f - GLOW, cy - size * 0.41f - GLOW, cx + size * 0.53f + GLOW, cy + size * 0.46f + GLOW);
       b.on = e.blush > 0.05f;
-      b.cx = cx + (s == 0 ? -1 : 1) * size * 0.34f; b.cy = cy + size * 0.30f;
-      b.rx = size * 0.2f; b.ry = 4;
+      b.cx = h2(cx + (s == 0 ? -1 : 1) * size * 0.34f); b.cy = h2(cy + size * 0.30f);
+      b.rx = h2(size * 0.2f);
     } else {
       float morph = e.heart * 2;            // shrink the eye away before the heart pops in
       w *= 1 - morph; h *= 1 - morph;
       d.heart = false;
-      d.w = w; d.h = h;
-      d.r = fminf(e.r * grow, fminf(w, h) * 0.5f);
-      d.top = cy - h / 2; d.bottom = cy + h / 2;
-      d.xl = cx - w / 2; d.xr = cx + w / 2;
+      float r = fminf(e.r * grow, fminf(w, h) * 0.5f);
+      float top = cy - h / 2, bottom = cy + h / 2;
+      d.r = h2(r); d.top = h2(top); d.bot = h2(bottom); d.xl = h2(cx - w / 2); d.xr = h2(cx + w / 2);
       float inner = (e.lidIn + e.lidFlat) * h, outer = (e.lidOut + e.lidFlat) * h;
-      d.dL = s == 0 ? outer : inner;      // left eye's inner edge is its right side
-      d.dR = s == 0 ? inner : outer;
-      d.lidMax = fmaxf(d.dL, d.dR);
-      d.lidK = fabsf(d.dR - d.dL) < 0.01f ? 0 : (d.xr - d.xl) / (d.dR - d.dL);
+      d.dL = h2(s == 0 ? outer : inner);    // left eye's inner edge is its right side
+      d.dR = h2(s == 0 ? inner : outer);
+      d.lidMax = d.dL > d.dR ? d.dL : d.dR;
+      d.lidK = d.dR == d.dL ? 0 : ((int32_t)(d.xr - d.xl) << 8) / (d.dR - d.dL);
       // happy: an ellipse rises from below and bites the eye into an arch, ^
-      d.ery = h * 0.72f; d.erx = w * 0.30f;
-      d.ecy = d.bottom + (1 - e.happy) * d.ery;
-      d.happyCut = e.happy > 0.01f && d.ery > GLOW + 1;
-      d.iery = d.happyCut ? 1 / d.ery : 0;
-      d.ieryH = d.happyCut ? 1 / (d.ery - HALO) : 0;
-      d.ieryG = d.happyCut ? 1 / (d.ery - GLOW) : 0;
-      d.gTop = d.top; d.gIh = h > 1 ? 1 / h : 0;
+      float ery = h * 0.72f;
+      d.ery = h2(ery); d.erx = h2(w * 0.30f);
+      d.ecy = h2(bottom + (1 - e.happy) * ery);
+      d.happyCut = e.happy > 0.01f && ery > GLOW + 1;
+      for (uint8_t l = 0; l < 3; l++) d.eratio[l] = q8(d.erx - (int16_t)(l * 4), d.ery - (int16_t)(l * 4));
+      d.gTop = d.top; d.gInv = (uint16_t)(65535 / ((d.bot - d.top) | 1));
       // glints: a big one up-left and a small one below it, drifting with the gaze
       float gx = lookX_ * 2, gy = lookY_ * 1.5f;
-      d.g1x = d.xl + w * 0.31f + gx; d.g1y = d.top + h * 0.27f + gy; d.g1rx = w * 0.12f; d.g1ry = h * 0.095f;
-      d.g1iry = d.g1ry > 0.5f ? 1 / d.g1ry : 0;
-      d.g2x = d.xl + w * 0.52f + gx; d.g2y = d.top + h * 0.45f + gy; d.g2r = w * 0.05f;
-      d.g2ir = d.g2r > 0.5f ? 1 / d.g2r : 0;
-      if (h < 18 || d.g1iry == 0) d.glints = false;   // blinking: no room for sparkle
+      d.g1x = h2(cx - w / 2 + w * 0.31f + gx); d.g1y = h2(top + h * 0.27f + gy);
+      d.g1rx = h2(w * 0.12f) + 1; d.g1ry = h2(h * 0.095f) + 1; d.g1ratio = q8(d.g1rx, d.g1ry);   // +1: keep small shapes their size
+      d.g2x = h2(cx - w / 2 + w * 0.52f + gx); d.g2y = h2(top + h * 0.45f + gy); d.g2r = h2(w * 0.05f) + 1;
+      if (h < 18 || d.g1ry < 1) d.glints = false;   // blinking: no room for sparkle
       if (w < 1 || h < 1) { d.on = false; noBox(d.bx); }
-      else setBox(d.bx, d.xl - GLOW, d.top - GLOW, d.xr + GLOW, d.bottom + GLOW);
+      else setBox(d.bx, cx - w / 2 - GLOW, top - GLOW, cx + w / 2 + GLOW, bottom + GLOW);
       b.on = e.blush > 0.05f && d.on;
-      b.cx = cx + (s == 0 ? -1 : 1) * w * 0.12f; b.cy = d.bottom + 8;
-      b.rx = w * 0.30f; b.ry = 4;
+      b.cx = h2(cx + (s == 0 ? -1 : 1) * w * 0.12f); b.cy = h2(bottom + 8);
+      b.rx = h2(w * 0.30f);
     }
     float a = e.blush * 0.55f;
     b.color = rgb565(255 * a, 90 * a, 150 * a);
-    b.iry = 1 / b.ry;
-    if (b.on) setBox(b.bx, b.cx - b.rx, b.cy - b.ry, b.cx + b.rx, b.cy + b.ry); else noBox(b.bx);
+    b.ry = 9;                               // 4 px (+1 half px, like the glints)
+    b.ratio = q8(b.rx, b.ry);
+    if (b.on) setBox(b.bx, b.cx * 0.5f - b.rx * 0.5f, b.cy * 0.5f - 4, b.cx * 0.5f + b.rx * 0.5f, b.cy * 0.5f + 4);
+    else noBox(b.bx);
   }
 
   void prepareZ(uint8_t i, ZDraw &z) {
@@ -357,36 +398,39 @@ class Face {
     setBox(z.bx, z.x, z.y, z.x + z.s, z.y + z.s);
   }
 
-  static uint8_t add(Seg *out, uint8_t n, float a, float b, uint16_t color, uint8_t pri) {
-    int16_t x0 = px(a), x1 = px(b);
+  // A run given in half pixels -> pixels (round half up, like px()).
+  static uint8_t add2(Seg *out, uint8_t n, int16_t a, int16_t b, uint16_t color, uint8_t pri) {
+    int16_t x0 = (a + 1) >> 1, x1 = (b + 1) >> 1;
     if (x1 > x0 && n < 24) { out[n].x0 = x0; out[n].x1 = x1; out[n].color = color; out[n].pri = pri; n++; }
     return n;
   }
+  static uint8_t addF(Seg *out, uint8_t n, float a, float b, uint16_t color, uint8_t pri) {
+    return add2(out, n, h2(a), h2(b), color, pri);
+  }
 
-  // Eye body grown by g px (g = 0: the eye, g = GLOW: its glow ring). Up to 2 intervals.
-  static uint8_t eyeIv(const EyeDraw &d, float yc, float g, float iv[][2]) {
-    float top = d.top - g, bottom = d.bottom + g;
-    if (yc < top || yc >= bottom) return 0;
-    float r = d.r + g, dd = 0;
-    if (yc < top + r) dd = top + r - yc; else if (yc > bottom - r) dd = yc - (bottom - r);
-    float inset = dd > 0 ? r - sqrtf(fmaxf(0, r * r - dd * dd)) : 0;
-    float x0 = d.xl - g + inset, x1 = d.xr + g - inset;
-    float rel = yc - d.top + g;          // depth below the (grown) top edge
-    if (rel < d.lidMax) {                // only rows the lid can reach
+  // Eye body grown by layer l (0 body, 1 halo, 2 glow), half pixels. Up to 2 intervals.
+  static uint8_t eyeIv(const EyeDraw &d, int16_t yc, uint8_t l, int16_t iv[][2]) {
+    int16_t g = (int16_t)(l * 4), top = d.top - g, bot = d.bot + g;
+    if (yc < top || yc >= bot) return 0;
+    int16_t r = d.r + g, dd = 0;
+    if (yc < top + r) dd = top + r - yc; else if (yc > bot - r) dd = yc - (bot - r);
+    int16_t inset = dd > 0 ? r - isqrt16((uint16_t)(r * r - dd * dd)) : 0;
+    int16_t x0 = d.xl - g + inset, x1 = d.xr + g - inset;
+    int16_t rel = yc - d.top + g;          // depth below the (grown) top edge
+    if (rel < d.lidMax) {                  // only rows the lid can reach
       if (d.lidK == 0) {
-        if (rel < d.dL) return 0;        // flat lid
+        if (rel < d.dL) return 0;          // flat lid
       } else {
-        float xs = d.xl + (rel - d.dL) * d.lidK;   // where the slanted lid crosses this row
-        if (d.dR > d.dL) x1 = fminf(x1, xs); else x0 = fmaxf(x0, xs);
+        int16_t xs = d.xl + (int16_t)(((int32_t)(rel - d.dL) * d.lidK) >> 8);   // slanted lid crosses here
+        if (d.dR > d.dL) { if (xs < x1) x1 = xs; } else if (xs > x0) x0 = xs;
       }
     }
     if (x1 <= x0) return 0;
     if (d.happyCut) {
-      float erx = d.erx - g, t = (yc - d.ecy) * (g == 0 ? d.iery : g == HALO ? d.ieryH : d.ieryG);
-      if (erx > 0 && t > -1 && t < 1) {
-        float hw = erx * sqrtf(1 - t * t);
+      int16_t hw = ellipseHW(yc - d.ecy, d.ery - g, d.eratio[l]);
+      if (hw >= 0 && d.erx - g > 0) {
         uint8_t n = 0;
-        float a = fminf(x1, d.cx - hw), b = fmaxf(x0, d.cx + hw);
+        int16_t a = d.cx - hw < x1 ? d.cx - hw : x1, b = d.cx + hw > x0 ? d.cx + hw : x0;
         if (a > x0) { iv[n][0] = x0; iv[n][1] = a; n++; }
         if (x1 > b) { iv[n][0] = b; iv[n][1] = x1; n++; }
         return n;
@@ -396,26 +440,25 @@ class Face {
     return 1;
   }
 
-  // Heart (two lobes on a V) of size s + 2g. Up to 3 intervals.
-  static uint8_t heartIv(const EyeDraw &d, float yc, float g, float iv[][2]) {
-    float s = d.hs + 2 * g, raw[3][2];
+  // Heart (two lobes on a V) grown by layer l, half pixels. Up to 3 intervals.
+  static uint8_t heartIv(const EyeDraw &d, int16_t yc, uint8_t l, int16_t iv[][2]) {
+    int16_t s = d.hs + 2 * (int16_t)(l * 4), raw[3][2];
     uint8_t k = 0;
-    float lr = s * 0.27f, ly = d.cy - s * 0.13f;
-    for (int8_t side = -1; side <= 1; side += 2) {
-      float dy = yc - ly;
-      if (fabsf(dy) < lr) {
-        float hw = sqrtf(lr * lr - dy * dy), lx = d.cx + side * s * 0.25f;
-        raw[k][0] = lx - hw; raw[k][1] = lx + hw; k++;
-      }
+    int16_t lr = (s * 69) >> 8, ly = d.cy - ((s * 33) >> 8), lx = s >> 2;   // 0.27, 0.13, 0.25 of s
+    int16_t dy = yc - ly;
+    if (dy > -lr && dy < lr) {
+      int16_t hw = isqrt16((uint16_t)(lr * lr - dy * dy));
+      raw[k][0] = d.cx - lx - hw; raw[k][1] = d.cx - lx + hw; k++;
+      raw[k][0] = d.cx + lx - hw; raw[k][1] = d.cx + lx + hw; k++;
     }
-    float ty0 = d.cy - s * 0.10f, ty1 = d.cy + s * 0.45f;
+    int16_t ty0 = d.cy - ((s * 26) >> 8), ty1 = d.cy + ((s * 115) >> 8);   // 0.10, 0.45 of s
     if (yc >= ty0 && yc < ty1) {
-      float hw = s * 0.5f * (ty1 - yc) / (ty1 - ty0);
+      int16_t hw = (int16_t)(((int32_t)(ty1 - yc) * d.tk[l]) >> 8);
       raw[k][0] = d.cx - hw; raw[k][1] = d.cx + hw; k++;
     }
     for (uint8_t i = 1; i < k; i++)
       for (uint8_t j = i; j > 0 && raw[j][0] < raw[j - 1][0]; j--) {
-        float a = raw[j][0], b = raw[j][1];
+        int16_t a = raw[j][0], b = raw[j][1];
         raw[j][0] = raw[j - 1][0]; raw[j][1] = raw[j - 1][1]; raw[j - 1][0] = a; raw[j - 1][1] = b;
       }
     uint8_t n = 0;
@@ -427,78 +470,141 @@ class Face {
   }
 
   // Glint ellipse clipped to the eye body intervals.
-  static uint8_t glintRow(Seg *out, uint8_t n, float yc, float gx, float gy, float rx, float iry,
-                          const float body[][2], uint8_t nb, uint16_t color) {
-    float t = (yc - gy) * iry;
-    if (t <= -1 || t >= 1) return n;
-    float hw = rx * sqrtf(1 - t * t), a = gx - hw, b = gx + hw;
-    for (uint8_t i = 0; i < nb; i++) n = add(out, n, fmaxf(a, body[i][0]), fminf(b, body[i][1]), color, P_GLINT);
-    return n;
-  }
-
-  static uint8_t eyeRow(const EyeDraw &d, float yc, Seg *out, uint8_t n) {
-    float iv[3][2];
-    uint8_t k = d.heart ? heartIv(d, yc, GLOW, iv) : eyeIv(d, yc, GLOW, iv);
-    for (uint8_t i = 0; i < k; i++) n = add(out, n, iv[i][0], iv[i][1], d.glow, P_GLOW);
-    if (!k) return n;                    // outside the glow means outside everything
-    k = d.heart ? heartIv(d, yc, HALO, iv) : eyeIv(d, yc, HALO, iv);
-    for (uint8_t i = 0; i < k; i++) n = add(out, n, iv[i][0], iv[i][1], d.halo, P_HALO);
-    k = d.heart ? heartIv(d, yc, 0, iv) : eyeIv(d, yc, 0, iv);
-    if (!k) return n;
-    float t = (yc - d.gTop) * d.gIh;
-    t = t < 0 ? 0 : t > 1 ? 1 : t;
-    uint16_t body = rgb565(d.tr + d.dr * t, d.tg + d.dg * t, d.tb + d.db * t);
-    for (uint8_t i = 0; i < k; i++) n = add(out, n, iv[i][0], iv[i][1], body, P_BODY);
-    if (d.glints) {
-      n = glintRow(out, n, yc, d.g1x, d.g1y, d.g1rx, d.g1iry, iv, k, d.glint);
-      if (d.g2r > 0.5f) n = glintRow(out, n, yc, d.g2x, d.g2y, d.g2r, d.g2ir, iv, k, d.glint);
+  static uint8_t glintRow(Seg *out, uint8_t n, int16_t yc, int16_t gx, int16_t gy, int16_t ry, uint16_t ratio,
+                          const int16_t body[][2], uint8_t nb, uint16_t color) {
+    int16_t hw = ellipseHW(yc - gy, ry, ratio);
+    if (hw < 0) return n;
+    for (uint8_t i = 0; i < nb; i++) {
+      int16_t a = gx - hw > body[i][0] ? gx - hw : body[i][0], b = gx + hw < body[i][1] ? gx + hw : body[i][1];
+      n = add2(out, n, a, b, color, P_GLINT);
     }
     return n;
   }
 
-  static uint8_t blushRow(const BlushDraw &b, float yc, Seg *out, uint8_t n) {
-    float t = (yc - b.cy) * b.iry;
-    if (t <= -1 || t >= 1) return n;
-    float hw = b.rx * sqrtf(1 - t * t);
-    return add(out, n, b.cx - hw, b.cx + hw, b.color, P_BLUSH);
+  // Append [a, b) half pixels as a pixel run, if it is not empty.
+  static uint8_t put(Seg *out, uint8_t n, int16_t a, int16_t b, uint16_t color) {
+    return a < b ? add2(out, n, a, b, color, 1) : n;
+  }
+
+  // Body interval [a, b) with the glints punched in.
+  static uint8_t bodyRuns(const EyeDraw &d, int16_t yc, int16_t a, int16_t b, uint16_t body, Seg *out, uint8_t n) {
+    int16_t g[2][2];
+    uint8_t k = 0;
+    if (d.glints) {
+      int16_t hw = ellipseHW(yc - d.g1y, d.g1ry, d.g1ratio);
+      if (hw >= 0) { g[k][0] = d.g1x - hw; g[k][1] = d.g1x + hw; k++; }
+      if (d.g2r > 0) {
+        hw = ellipseHW(yc - d.g2y, d.g2r, 256);
+        if (hw >= 0) { g[k][0] = d.g2x - hw; g[k][1] = d.g2x + hw; k++; }
+      }
+      if (k == 2 && g[1][0] < g[0][0]) { int16_t t0 = g[0][0], t1 = g[0][1]; g[0][0] = g[1][0]; g[0][1] = g[1][1]; g[1][0] = t0; g[1][1] = t1; }
+      if (k == 2 && g[1][0] <= g[0][1]) { if (g[1][1] > g[0][1]) g[0][1] = g[1][1]; k = 1; }   // overlapping glints merge
+    }
+    int16_t x = a;
+    for (uint8_t i = 0; i < k; i++) {
+      int16_t ga = g[i][0] > a ? g[i][0] : a, gb = g[i][1] < b ? g[i][1] : b;
+      if (gb <= ga) continue;
+      n = put(out, n, x, ga, body);
+      n = put(out, n, ga, gb, d.glint);
+      x = gb;
+    }
+    return put(out, n, x, b, body);
+  }
+
+  // One eye's row as disjoint runs, left to right. The layers are nested
+  // (glow around halo around body around glints), so each is emitted around
+  // the next one in a single pass: no overlap to resolve afterwards.
+  static uint8_t eyeRuns(const EyeDraw &d, int16_t yc, Seg *out, uint8_t n) {
+    int16_t G[3][2], Hl[3][2], B[3][2];
+    uint8_t ng = d.heart ? heartIv(d, yc, 2, G) : eyeIv(d, yc, 2, G);
+    if (!ng) return n;                   // outside the glow means outside everything
+    uint8_t nh = d.heart ? heartIv(d, yc, 1, Hl) : eyeIv(d, yc, 1, Hl);
+    uint8_t nb = d.heart ? heartIv(d, yc, 0, B) : eyeIv(d, yc, 0, B);
+    uint16_t body = 0;
+    if (nb) {
+      int16_t t = yc - d.gTop;
+      uint16_t t8 = t <= 0 ? 0 : (uint16_t)(((uint32_t)t * d.gInv) >> 8);
+      if (t8 > 255) t8 = 255;
+      uint8_t R = d.tr + (int16_t)(((int32_t)d.dr * t8) >> 8);
+      uint8_t Gc = d.tg + (int16_t)(((int32_t)d.dg * t8) >> 8);
+      uint8_t Bc = d.tb + (int16_t)(((int32_t)d.db * t8) >> 8);
+      body = ((R & 0xF8) << 8) | ((Gc & 0xFC) << 3) | (Bc >> 3);
+    }
+    uint8_t ih = 0, ib = 0;
+    for (uint8_t i = 0; i < ng; i++) {
+      int16_t ga = G[i][0], gb = G[i][1], x = ga;
+      for (; ih < nh && Hl[ih][0] < gb; ih++) {        // halo pieces inside this glow piece
+        int16_t ha = Hl[ih][0] > x ? Hl[ih][0] : x, hb = Hl[ih][1] < gb ? Hl[ih][1] : gb;
+        if (hb <= ha) continue;
+        n = put(out, n, x, ha, d.glow);
+        int16_t hx = ha;
+        for (; ib < nb && B[ib][0] < hb; ib++) {       // body pieces inside this halo piece
+          int16_t ba = B[ib][0] > hx ? B[ib][0] : hx, bb = B[ib][1] < hb ? B[ib][1] : hb;
+          if (bb <= ba) continue;
+          n = put(out, n, hx, ba, d.halo);
+          n = bodyRuns(d, yc, ba, bb, body, out, n);
+          hx = bb;
+        }
+        n = put(out, n, hx, hb, d.halo);
+        x = hb;
+      }
+      n = put(out, n, x, gb, d.glow);
+    }
+    return n;
+  }
+
+  // Blush and Z runs (after the eye runs in seg) keep only the parts that
+  // fall outside every eye run; result: all runs disjoint.
+  static uint8_t clipExtras(Seg *seg, uint8_t eyeRuns, uint8_t n) {
+    uint8_t out = eyeRuns;
+    for (uint8_t i = eyeRuns; i < n; i++) {
+      int16_t a = seg[i].x0, b = seg[i].x1;
+      uint16_t c = seg[i].color;
+      for (uint8_t j = 0; j < eyeRuns && a < b; j++) {
+        if (seg[j].x1 <= a || seg[j].x0 >= b) continue;
+        if (seg[j].x0 > a && out < 24) { seg[out].x0 = a; seg[out].x1 = seg[j].x0; seg[out].color = c; seg[out].pri = 1; out++; }
+        a = seg[j].x1;
+      }
+      if (a < b && out < 24) { seg[out].x0 = a; seg[out].x1 = b; seg[out].color = c; seg[out].pri = 1; out++; }
+    }
+    return out;
+  }
+
+  static uint8_t blushRow(const BlushDraw &b, int16_t yc, Seg *out, uint8_t n) {
+    int16_t hw = ellipseHW(yc - b.cy, b.ry, b.ratio);
+    return hw < 0 ? n : add2(out, n, b.cx - hw, b.cx + hw, b.color, P_BLUSH);
   }
 
   static uint8_t zRow(const ZDraw &z, float yc, Seg *out, uint8_t n) {
     float s = z.s, t = fmaxf(2, s / 5), ry = yc - z.y;
     if (ry < 0 || ry >= s) return n;
-    if (ry < t || ry >= s - t) return add(out, n, z.x, z.x + s, z.color, P_BODY);
+    if (ry < t || ry >= s - t) return addF(out, n, z.x, z.x + s, z.color, P_BODY);
     float xd = z.x + (s - t) * (1 - (ry - t) / (s - 2 * t));
-    return add(out, n, xd, xd + t, z.color, P_BODY);
+    return addF(out, n, xd, xd + t, z.color, P_BODY);
   }
 
-  // Resolve overlapping runs by priority and stream the row [x0, x1).
+  // Stream the row [x0, x1) from disjoint runs, black in the gaps.
+  // Eye runs arrive in x order already; the few extras get sorted in.
   template <class Sink>
   static void emitRow(Sink &sink, Seg *seg, uint8_t n, int16_t x0, int16_t x1) {
-    int16_t b[50];
-    uint8_t nb = 0;
-    b[nb++] = x0; b[nb++] = x1;
-    for (uint8_t i = 0; i < n; i++) {
-      if (seg[i].x0 < x0) seg[i].x0 = x0;
-      if (seg[i].x1 > x1) seg[i].x1 = x1;
-      if (seg[i].x1 <= seg[i].x0) continue;
-      b[nb++] = seg[i].x0; b[nb++] = seg[i].x1;
-    }
-    for (uint8_t i = 1; i < nb; i++)
-      for (uint8_t j = i; j > 0 && b[j] < b[j - 1]; j--) { int16_t t = b[j]; b[j] = b[j - 1]; b[j - 1] = t; }
+    for (uint8_t i = 1; i < n; i++)
+      for (uint8_t j = i; j > 0 && seg[j].x0 < seg[j - 1].x0; j--) { Seg t = seg[j]; seg[j] = seg[j - 1]; seg[j - 1] = t; }
     uint16_t runColor = 0;
-    int16_t runLen = 0;
-    for (uint8_t i = 0; i + 1 < nb; i++) {
-      int16_t a = b[i], c = b[i + 1];
-      if (c <= a) continue;
-      uint16_t color = 0;
-      uint8_t best = 0;
-      for (uint8_t j = 0; j < n; j++)
-        if (seg[j].pri > best && seg[j].x0 <= a && seg[j].x1 >= c) { best = seg[j].pri; color = seg[j].color; }
-      if (color == runColor) runLen += c - a;
-      else {
-        if (runLen) sink.run(runColor, runLen);
-        runColor = color; runLen = c - a;
+    int16_t runLen = 0, x = x0;
+    for (uint8_t i = 0; i <= n; i++) {
+      int16_t a = i < n ? seg[i].x0 : x1, b = i < n ? seg[i].x1 : x1;
+      a = a < x0 ? x0 : a > x1 ? x1 : a;   // clip to the window, both ends
+      b = b < x0 ? x0 : b > x1 ? x1 : b;
+      if (a > x) {                          // black gap before this run
+        if (runColor == 0) runLen += a - x;
+        else { if (runLen) sink.run(runColor, runLen); runColor = 0; runLen = a - x; }
+        x = a;
       }
+      if (i == n || b <= x) continue;
+      uint16_t c = seg[i].color;
+      if (c == runColor) runLen += b - x;
+      else { if (runLen) sink.run(runColor, runLen); runColor = c; runLen = b - x; }
+      x = b;
     }
     if (runLen) sink.run(runColor, runLen);
   }
