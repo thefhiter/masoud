@@ -57,15 +57,22 @@ GND -> PAM8403 GND
 PAM8403 L/R out -> the two speakers
 ```
 
-- **Chirps, no PC needed:** every mood has its own robot chirp, synthesized on the Uno
+- **Talk only (default):** the chirps are off; his only sound is his voice. Build with
+  `-DMASOUD_CHIRPS=1` to bring back the robot chirps below.
+- **Chirps, optional:** every mood has its own robot chirp, synthesized on the Uno
   (rising for *Mrigel!*, a sigh for *Mghboun*, a buzz for *Harissa!*, a wobble for *Dawkha!*),
   plus a hello at boot.
 - **Speech from the PC:** `tools/masoud_say.py` turns Arabic text into Microsoft's Tunisian
   voice (`ar-TN-HediNeural`, pitched up a little), shapes it for 28 mm speakers and streams it
   over USB with the sound project's credit flow control. His eyes pulse while he talks.
 
+**Let him talk on his own:** keep `tools/masoud_live.py` running. He greets you, then says a Derja
+line whenever his mood changes (*هريسة! ما تقلقنيش!*, *نحبك برشا!*...). Type a sentence and press
+Enter to make him say it, or type a mood key (`h s a u z l ? d n`). Lines are cached, so he answers instantly.
+
 ```sh
 pip install edge-tts pyserial          # and ffmpeg on PATH
+python tools/masoud_live.py            # he talks by himself; type to make him say anything
 python tools/masoud_say.py "أسلامة! أنا مسعود" --mood h
 python tools/masoud_say.py "أسلامة" --preview hello.wav    # hear it without the robot
 ```

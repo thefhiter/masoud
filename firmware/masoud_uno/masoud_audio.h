@@ -29,6 +29,12 @@
 #include <Arduino.h>
 #include <util/atomic.h>
 
+// Talk only: the mood chirps are off unless built with -DMASOUD_CHIRPS=1.
+// His voice then comes only from the PC (tools/masoud_live.py speaks each mood).
+#ifndef MASOUD_CHIRPS
+#define MASOUD_CHIRPS 0
+#endif
+
 namespace audio {
 
 const uint16_t RATE = 8000;
@@ -140,7 +146,7 @@ static void begin() {
 
 // Play a chirp (ignored while speech is streaming).
 static void play(const Note *n) {
-  if (streaming || !n) return;
+  if (!MASOUD_CHIRPS || streaming || !n) return;
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { song = n; left = 0; }
 }
 static void playMood(uint8_t mood) { if (mood < sizeof MOOD_SOUND / sizeof MOOD_SOUND[0]) play(MOOD_SOUND[mood]); }
