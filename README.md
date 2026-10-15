@@ -38,6 +38,12 @@ blinks, glances, blush when he's happy, and every few seconds a mood with its ow
 
 The full sheet with a tick-off checklist and a guide to amp pin labels is [`docs/wiring.html`](docs/wiring.html) (open it in a browser).
 
+**No amp?** The speakers can go straight on the Uno through one resistor (quieter):
+
+<img src="docs/masoud-wiring-no-amp.svg" alt="Without the amp: D3, a 220 ohm resistor, speaker 1, speaker 2 in series, back to GND">
+
+`D3 --[220 Ω]-- speaker 1 -- speaker 2 -- GND`. Never leave the resistor out: a bare speaker would burn pin D3.
+
 ### His voice
 
 Masoud uses the same **PAM8403 amp and two small speakers** as the arduino-sound-player

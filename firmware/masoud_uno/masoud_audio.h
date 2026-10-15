@@ -1,10 +1,16 @@
 // Masoud's voice: 8-bit audio on D3 into the PAM8403 amp and two speakers,
 // the same amp and speakers as the arduino-sound-player project.
 //
-// Wiring:
+// Wiring, with the amp (louder):
 //   D3  -> PAM8403 left AND right input (same mono signal)
 //          optional filter: D3 --[1k]--+-- amp input, 10 nF from there to GND
 //   5V  -> PAM8403 VCC,  GND -> PAM8403 GND,  PAM8403 outputs -> the speakers
+// Wiring without the amp (quieter, no extra parts but a resistor):
+//   D3 --[220 ohm]-- speaker 1 -- speaker 2 -- GND   (speakers in series)
+//   The resistor is not optional: a bare speaker on a pin would burn it.
+// Either way the output rests at 0 V when quiet and fades up to mid level
+// around each sound, so no current flows through a direct speaker in silence
+// and there is no pop.
 //
 // Why D3: the sound project used D9/D10 (Timer1), but on Masoud those pins
 // drive the screen (DC and CS). D3 is OC2B, Timer2's free PWM output, so:
@@ -59,6 +65,7 @@ static uint8_t ring[RING];
 static volatile uint16_t head = 0, tail = 0, underruns = 0;
 static volatile bool playing = false, feeding = false;
 static volatile uint8_t last = 128, peak = 0;
+static volatile uint8_t bias = 0;            // 0 when quiet, ramps to 128 while sounding
 
 static const Note *volatile song = nullptr;   // current chirp, in PROGMEM
 static volatile uint16_t left = 0, done = 0;  // samples left / done in this note
@@ -66,7 +73,8 @@ static volatile uint32_t acc = 0, inc = 0;    // phase accumulator, 16.16-ish
 static volatile int32_t dinc = 0;
 static volatile uint8_t wave = REST, vol = 0;
 
-static bool streaming = false, gotData = false;
+static volatile bool streaming = false;   // read by the sample interrupt
+static bool gotData = false;
 static uint8_t outstanding = 0;
 static uint16_t rxSinceCredit = 0;
 static uint32_t lastAudio = 0;
@@ -108,7 +116,12 @@ ISR(TIMER1_COMPA_vect) {
   }
   uint8_t d = s > 128 ? s - 128 : 128 - s;
   if (d > peak) peak = d;
-  OCR2B = s;
+  // rest at 0 V in silence (no DC through a speaker wired straight to the pin),
+  // ramp to the 128 midpoint over 16 ms around a sound so there is no click
+  if (playing || streaming || song || left) { if (bias < 128) bias++; }
+  else if (bias) bias--;
+  int16_t out = (int16_t)s - 128 + bias;
+  OCR2B = out < 0 ? 0 : out > 255 ? 255 : out;
 }
 
 namespace audio {
@@ -117,7 +130,7 @@ static void begin() {
   pinMode(3, OUTPUT);
   TCCR2A = _BV(COM2B1) | _BV(WGM21) | _BV(WGM20);   // fast PWM 8-bit on OC2B (D3)
   TCCR2B = _BV(CS20);                               // no prescaler: 62.5 kHz carrier
-  OCR2B = 128;
+  OCR2B = 0;                                        // quiet = 0 V
   TCCR1A = 0;                                       // Timer1: CTC sample clock
   TCCR1B = _BV(WGM12) | _BV(CS10);
   OCR1A = F_CPU / RATE - 1;
@@ -148,7 +161,6 @@ static void beginStream() {
 static void endStream() {
   streaming = false; playing = false; feeding = false;
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { head = tail = 0; }
-  OCR2B = 128;
   Serial.print(F("OK:IDLE:"));
   Serial.println(underruns);
 }

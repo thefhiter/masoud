@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" role="img" aria-label="Speakers without the amp: Uno pin D3 goes through a 220 ohm resistor to speaker 1, speaker 1's other wire goes to speaker 2, and speaker 2's other wire goes back to Uno GND. The two speakers are in series." font-family="ui-monospace, Cascadia Mono, Consolas, monospace">
+  <defs>
+    <pattern id="g2" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M20 0H0V20" fill="none" stroke="#E6E8E3" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="980" height="470" fill="#FBFBF9"/>
+  <rect width="980" height="470" fill="url(#g2)"/>
+
+  <!-- Arduino Uno (only the pins this needs are named) -->
+  <rect x="40" y="110" width="380" height="270" rx="14" fill="#00878F"/>
+  <rect x="18" y="140" width="52" height="58" rx="4" fill="#B8BEC6"/>
+  <text x="44" y="174" fill="#55606F" font-size="10" text-anchor="middle">USB</text>
+  <text x="96" y="262" fill="#FFFFFF" font-size="18" font-weight="800" font-family="Rubik, Segoe UI, sans-serif">ARDUINO UNO</text>
+  <text x="96" y="284" fill="#BFE3E6" font-size="11">screen wires: same as before</text>
+  <rect x="246" y="120" width="160" height="20" rx="3" fill="#1A1C20"/>
+  <g fill="#6B7280">
+    <circle cx="256" cy="130" r="4"/><circle cx="276" cy="130" r="4"/><circle cx="296" cy="130" r="4"/><circle cx="316" cy="130" r="4"/>
+    <circle cx="356" cy="130" r="4"/><circle cx="376" cy="130" r="4"/><circle cx="396" cy="130" r="4"/>
+  </g>
+  <g fill="#BFE3E6" font-size="11" text-anchor="end">
+    <text transform="translate(260 150) rotate(-90)">7</text>
+    <text transform="translate(280 150) rotate(-90)">~6</text>
+    <text transform="translate(300 150) rotate(-90)">~5</text>
+    <text transform="translate(320 150) rotate(-90)">4</text>
+    <text transform="translate(340 150) rotate(-90)" fill="#FFFFFF" font-weight="700">~3</text>
+    <text transform="translate(360 150) rotate(-90)">2</text>
+    <text transform="translate(380 150) rotate(-90)">TX 1</text>
+    <text transform="translate(400 150) rotate(-90)">RX 0</text>
+  </g>
+  <rect x="96" y="350" width="140" height="20" rx="3" fill="#1A1C20"/>
+  <g fill="#6B7280">
+    <circle cx="106" cy="360" r="4"/><circle cx="126" cy="360" r="4"/><circle cx="146" cy="360" r="4"/><circle cx="166" cy="360" r="4"/>
+    <circle cx="206" cy="360" r="4"/><circle cx="226" cy="360" r="4"/>
+  </g>
+  <g fill="#BFE3E6" font-size="11">
+    <text transform="translate(110 342) rotate(-90)">IOREF</text>
+    <text transform="translate(130 342) rotate(-90)">RESET</text>
+    <text transform="translate(150 342) rotate(-90)">3.3V</text>
+    <text transform="translate(170 342) rotate(-90)">5V</text>
+    <text transform="translate(190 342) rotate(-90)" fill="#FFFFFF" font-weight="700">GND</text>
+    <text transform="translate(210 342) rotate(-90)">GND</text>
+    <text transform="translate(230 342) rotate(-90)">VIN</text>
+  </g>
+
+  <!-- resistor 220 ohm: red red brown -->
+  <rect x="486" y="46" width="96" height="28" rx="12" fill="#E8D3A6" stroke="#B9A57B"/>
+  <rect x="504" y="46" width="8" height="28" fill="#D32F2F"/>
+  <rect x="520" y="46" width="8" height="28" fill="#D32F2F"/>
+  <rect x="536" y="46" width="8" height="28" fill="#6D4C41"/>
+  <rect x="562" y="46" width="6" height="28" fill="#C9A227"/>
+  <text x="534" y="34" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">220 Ω resistor</text>
+  <text x="534" y="94" fill="#55606F" font-size="11" text-anchor="middle">red-red-brown</text>
+  <text x="534" y="108" fill="#55606F" font-size="11" text-anchor="middle">150–330 Ω ok</text>
+
+  <!-- speakers -->
+  <g>
+    <circle cx="700" cy="230" r="48" fill="#3A3F47"/><circle cx="700" cy="230" r="33" fill="#596170"/><circle cx="700" cy="230" r="10" fill="#2A2E35"/>
+    <rect x="636" y="206" width="14" height="12" rx="2" fill="#D4AF37"/><rect x="636" y="242" width="14" height="12" rx="2" fill="#D4AF37"/>
+    <text x="700" y="166" fill="#1F2937" font-size="13" font-weight="700" text-anchor="middle" font-family="Rubik, Segoe UI, sans-serif">Speaker 1</text>
+    <text x="643" y="200" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">1</text>
+    <text x="643" y="270" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">2</text>
+  </g>
+  <g>
+    <circle cx="880" cy="230" r="48" fill="#3A3F47"/><circle cx="880" cy="230" r="33" fill="#596170"/><circle cx="880" cy="230" r="10" fill="#2A2E35"/>
+    <rect x="816" y="206" width="14" height="12" rx="2" fill="#D4AF37"/><rect x="816" y="242" width="14" height="12" rx="2" fill="#D4AF37"/>
+    <text x="880" y="166" fill="#1F2937" font-size="13" font-weight="700" text-anchor="middle" font-family="Rubik, Segoe UI, sans-serif">Speaker 2</text>
+    <text x="823" y="200" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">1</text>
+    <text x="823" y="270" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">2</text>
+  </g>
+
+  <!-- wires: halo then color -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M336 130V60H486"/>
+    <path d="M582 60H612V212H636"/>
+    <path d="M636 248H614V310H780V212H816"/>
+    <path d="M816 248H796V420H186V360"/>
+  </g>
+  <g fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M336 130V60H486" stroke="#8E24AA"/>
+    <path d="M582 60H612V212H636" stroke="#8E24AA"/>
+    <path d="M636 248H614V310H780V212H816" stroke="#C62828"/>
+    <path d="M816 248H796V420H186V360" stroke="#212121"/>
+  </g>
+  <g fill="#1F2937" font-size="12" font-weight="700">
+    <text x="344" y="82">D3</text>
+    <text x="690" y="330" text-anchor="middle">speaker 1 → speaker 2</text>
+    <text x="490" y="440" text-anchor="middle">speaker 2 → Uno GND</text>
+  </g>
+
+  <!-- callout -->
+  <rect x="440" y="120" width="160" height="58" rx="8" fill="#FDECEA" stroke="#E53935"/>
+  <text x="520" y="140" fill="#B71C1C" font-size="12" font-weight="700" text-anchor="middle">Never skip the</text>
+  <text x="520" y="156" fill="#B71C1C" font-size="12" font-weight="700" text-anchor="middle">resistor: it would</text>
+  <text x="520" y="172" fill="#B71C1C" font-size="12" font-weight="700" text-anchor="middle">burn pin D3</text>
+</svg>
