@@ -66,13 +66,20 @@ PAM8403 L/R out -> the two speakers
   voice (`ar-TN-HediNeural`, pitched up a little), shapes it for 28 mm speakers and streams it
   over USB with the sound project's credit flow control. His eyes pulse while he talks.
 
-**Let him talk on his own:** keep `tools/masoud_live.py` running. He greets you, then says a Derja
-line whenever his mood changes (*هريسة! ما تقلقنيش!*, *نحبك برشا!*...). Type a sentence and press
-Enter to make him say it, or type a mood key (`h s a u z l ? d n`). Lines are cached, so he answers instantly.
+**He always talks:** `tools/masoud_live.py` greets you, says a Derja line on every mood change
+(*هريسة! ما تقلقنيش!*, *نحبك برشا!*...), and after ~30 s of quiet says something by himself
+(water, coffee, *شبيك ساكت؟*, good morning or good night by the clock). Type a sentence to make him
+say it, or a mood key (`h s a u z l ? d n`). Lines are cached, so he answers instantly.
+
+- `python tools/masoud_live.py --install`: start with Windows in the background; it waits for him to
+  be plugged in and reconnects after unplugging (log in `%LOCALAPPDATA%\masoud\live.log`).
+- It holds his USB port, so run `python tools/masoud_live.py --stop` before uploading a sketch;
+  `--uninstall` removes the autostart.
 
 ```sh
 pip install edge-tts pyserial          # and ffmpeg on PATH
 python tools/masoud_live.py            # he talks by himself; type to make him say anything
+python tools/masoud_live.py --install  # ...always, from every Windows start
 python tools/masoud_say.py "أسلامة! أنا مسعود" --mood h
 python tools/masoud_say.py "أسلامة" --preview hello.wav    # hear it without the robot
 ```
