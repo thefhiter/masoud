@@ -1,0 +1,355 @@
+<title>Masoud Wiring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@700;800;900&family=Readex+Pro:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #F4F5F1; --surface: #FFFFFF; --text: #0A0E17; --soft: #4C5566; --line: #DCDFD6; --chip: #E8EAE3;
+  --yellow: #FFC61A; --warn-bg: #FDECEA; --warn: #B71C1C; --done: #2E7D32;
+  --display: "Rubik", "Segoe UI", system-ui, sans-serif; --body: "Readex Pro", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --bg: #0A0E17; --surface: #121826; --text: #F4F5F1; --soft: #A3ACBD; --line: #232B3B; --chip: #1A2233; --warn-bg: #3A1414; --warn: #FF8A80; --done: #81C784; }
+}
+:root[data-theme="dark"] { color-scheme: dark; --bg: #0A0E17; --surface: #121826; --text: #F4F5F1; --soft: #A3ACBD; --line: #232B3B; --chip: #1A2233; --warn-bg: #3A1414; --warn: #FF8A80; --done: #81C784; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 400 16px/1.6 var(--body); padding-inline: 18px; }
+.wrap { max-width: 1180px; margin-inline: auto; display: grid; gap: 40px; padding-block: 28px 64px; }
+h1, h2 { font-family: var(--display); margin: 0; line-height: 1.05; text-wrap: balance; }
+h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 900; letter-spacing: -.03em; }
+h2 { font-size: 26px; font-weight: 800; letter-spacing: -.01em; }
+p { margin: 0; }
+.lede { color: var(--soft); max-width: 70ch; }
+.head { display: grid; gap: 10px; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; }
+.steps span { background: var(--chip); border-radius: 999px; padding: 6px 12px; font-size: 14px; font-weight: 500; }
+.steps b { font-family: var(--display); }
+.warn { background: var(--warn-bg); color: var(--warn); border-radius: 14px; padding: 14px 18px; font-weight: 500; display: grid; gap: 4px; }
+figure { margin: 0; display: grid; gap: 10px; }
+.diagram { background: #FBFBF9; border: 1px solid var(--line); border-radius: 18px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 900px; height: auto; }
+figcaption { color: var(--soft); font-size: 14px; }
+.section { display: grid; gap: 16px; }
+.group { display: grid; gap: 8px; }
+.group h3 { margin: 0; font: 800 15px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--soft); }
+.wire { display: grid; grid-template-columns: 28px 20px minmax(130px, 1fr) 24px minmax(130px, 1fr) minmax(0, 1.4fr); gap: 12px; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; cursor: pointer; }
+.wire input { width: 22px; height: 22px; accent-color: var(--done); cursor: pointer; }
+.wire .sw { width: 20px; height: 8px; border-radius: 4px; }
+.wire .pin { font: 600 15px/1.2 var(--mono); }
+.wire .arrow { color: var(--soft); text-align: center; }
+.wire .note { color: var(--soft); font-size: 14px; }
+.wire:has(input:checked) { border-color: var(--done); }
+.wire:has(input:checked) .pin { text-decoration: line-through; text-decoration-color: var(--done); }
+@media (max-width: 720px) {
+  .wire { grid-template-columns: 28px 20px 1fr 20px 1fr; }
+  .wire .note { grid-column: 3 / -1; }
+}
+.progress { font-weight: 600; }
+.labels { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.lab { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 6px; }
+.lab b { font-family: var(--display); font-size: 17px; }
+.lab code { font: 600 14px/1.6 var(--mono); background: var(--chip); border-radius: 6px; padding: 1px 6px; }
+.lab p { color: var(--soft); font-size: 15px; }
+.checks { display: grid; gap: 8px; padding-left: 20px; margin: 0; color: var(--soft); }
+.checks b { color: var(--text); font-weight: 600; }
+.btn { font: 500 14px/1 var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 10px 14px; cursor: pointer; justify-self: start; }
+.btn:focus-visible, .wire:focus-within { outline: 2px solid var(--yellow); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Masoud wiring</h1>
+    <p class="lede">Arduino Uno, the 1.8" screen, the PAM8403 amp and the two speakers. Every pin is labeled as it is printed on the boards.
+      Unplug the USB while you wire, and tick each wire below as you go.</p>
+    <div class="steps"><span><b>1</b> Screen: 7 wires</span><span><b>2</b> Amp: 3 wires</span><span><b>3</b> Speakers: 4 wires</span></div>
+  </header>
+
+  <div class="warn" role="note">
+    <span>The screen takes <b>3.3V</b>, the amp takes <b>5V</b>. Swapping them can damage the screen.</span>
+    <span>Nothing goes on D9 or D10 except the screen: those pins drive it.</span>
+  </div>
+
+  <figure>
+    <div class="diagram"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1290 800" role="img" aria-label="Masoud wiring: the screen's 7 wires go to Arduino pins 3.3V, GND, D13, D11, D10, D9 and D8; the amp takes D3 on its L and R inputs plus 5V and GND; speaker 1 goes on the amp's L+ and L- outputs and speaker 2 on R+ and R-." font-family="ui-monospace, Cascadia Mono, Consolas, monospace">
+  <defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M20 0H0V20" fill="none" stroke="#E6E8E3" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1290" height="800" fill="#FBFBF9"/>
+  <rect width="1290" height="800" fill="url(#grid)"/>
+
+  <!-- ===================== SCREEN (Waveshare 1.8" LCD) ===================== -->
+  <rect x="330" y="20" width="400" height="152" rx="12" fill="#1C4F9C"/>
+  <text x="350" y="44" fill="#FFFFFF" font-size="14" font-weight="700" font-family="Rubik, Segoe UI, sans-serif">SCREEN · Waveshare 1.8" LCD</text>
+  <rect x="352" y="52" width="100" height="46" rx="5" fill="#05070C"/>
+  <rect x="374" y="62" width="18" height="26" rx="6" fill="#00D7FF"/>
+  <rect x="412" y="62" width="18" height="26" rx="6" fill="#00D7FF"/>
+  <rect x="368" y="150" width="336" height="22" rx="3" fill="#0B1B33"/>
+  <g fill="#FFFFFF" font-size="11">
+    <text transform="translate(384 146) rotate(-90)">VCC</text>
+    <text transform="translate(418 146) rotate(-90)">GND</text>
+    <text transform="translate(452 146) rotate(-90)" fill="#9DB3D6">MISO</text>
+    <text transform="translate(486 146) rotate(-90)">MOSI</text>
+    <text transform="translate(520 146) rotate(-90)">SCK</text>
+    <text transform="translate(554 146) rotate(-90)">LCD_CS</text>
+    <text transform="translate(588 146) rotate(-90)" fill="#9DB3D6">RAM_CS</text>
+    <text transform="translate(622 146) rotate(-90)">DC</text>
+    <text transform="translate(656 146) rotate(-90)">RST</text>
+    <text transform="translate(690 146) rotate(-90)" fill="#9DB3D6">BL</text>
+  </g>
+  <g fill="#D4AF37">
+    <circle cx="380" cy="161" r="5"/><circle cx="414" cy="161" r="5"/><circle cx="448" cy="161" r="5"/>
+    <circle cx="482" cy="161" r="5"/><circle cx="516" cy="161" r="5"/><circle cx="550" cy="161" r="5"/>
+    <circle cx="584" cy="161" r="5"/><circle cx="618" cy="161" r="5"/><circle cx="652" cy="161" r="5"/>
+    <circle cx="686" cy="161" r="5"/>
+  </g>
+  <!-- unused screen pins -->
+  <g stroke="#9AA3B2" stroke-width="2" stroke-linecap="round">
+    <path d="M442 182l12 12M454 182l-12 12"/><path d="M578 182l12 12M590 182l-12 12"/><path d="M680 182l12 12M692 182l-12 12"/>
+  </g>
+  <text x="742" y="98" fill="#55606F" font-size="12">MISO, RAM_CS, BL:</text>
+  <text x="742" y="114" fill="#55606F" font-size="12">leave empty</text>
+
+  <!-- ===================== ARDUINO UNO ===================== -->
+  <rect x="330" y="300" width="500" height="300" rx="14" fill="#00878F"/>
+  <rect x="306" y="330" width="56" height="62" rx="4" fill="#B8BEC6"/>
+  <text x="334" y="366" fill="#55606F" font-size="10" text-anchor="middle">USB</text>
+  <rect x="306" y="500" width="50" height="62" rx="4" fill="#26292E"/>
+  <rect x="590" y="430" width="200" height="48" rx="4" fill="#1E2227"/>
+  <text x="690" y="459" fill="#B8BEC6" font-size="11" text-anchor="middle">ATmega328P</text>
+  <text x="372" y="460" fill="#FFFFFF" font-size="18" font-weight="800" font-family="Rubik, Segoe UI, sans-serif">ARDUINO UNO</text>
+  <!-- top header -->
+  <rect x="430" y="310" width="200" height="20" rx="3" fill="#1A1C20"/>
+  <rect x="646" y="310" width="160" height="20" rx="3" fill="#1A1C20"/>
+  <g fill="#6B7280">
+    <circle cx="440" cy="320" r="4"/><circle cx="460" cy="320" r="4"/><circle cx="480" cy="320" r="4"/><circle cx="540" cy="320" r="4"/>
+    <circle cx="656" cy="320" r="4"/><circle cx="676" cy="320" r="4"/><circle cx="696" cy="320" r="4"/><circle cx="716" cy="320" r="4"/>
+    <circle cx="756" cy="320" r="4"/><circle cx="776" cy="320" r="4"/><circle cx="796" cy="320" r="4"/>
+  </g>
+  <g fill="#FFFFFF" font-size="11" text-anchor="end">
+    <text transform="translate(444 340) rotate(-90)" fill="#BFE3E6">SCL</text>
+    <text transform="translate(464 340) rotate(-90)" fill="#BFE3E6">SDA</text>
+    <text transform="translate(484 340) rotate(-90)" fill="#BFE3E6">AREF</text>
+    <text transform="translate(504 340) rotate(-90)" font-weight="700">GND</text>
+    <text transform="translate(524 340) rotate(-90)" font-weight="700">13</text>
+    <text transform="translate(544 340) rotate(-90)" fill="#BFE3E6">12</text>
+    <text transform="translate(564 340) rotate(-90)" font-weight="700">~11</text>
+    <text transform="translate(584 340) rotate(-90)" font-weight="700">~10</text>
+    <text transform="translate(604 340) rotate(-90)" font-weight="700">~9</text>
+    <text transform="translate(624 340) rotate(-90)" font-weight="700">8</text>
+    <text transform="translate(660 340) rotate(-90)" fill="#BFE3E6">7</text>
+    <text transform="translate(680 340) rotate(-90)" fill="#BFE3E6">~6</text>
+    <text transform="translate(700 340) rotate(-90)" fill="#BFE3E6">~5</text>
+    <text transform="translate(720 340) rotate(-90)" fill="#BFE3E6">4</text>
+    <text transform="translate(740 340) rotate(-90)" font-weight="700">~3</text>
+    <text transform="translate(760 340) rotate(-90)" fill="#BFE3E6">2</text>
+    <text transform="translate(780 340) rotate(-90)" fill="#BFE3E6">TX 1</text>
+    <text transform="translate(800 340) rotate(-90)" fill="#BFE3E6">RX 0</text>
+  </g>
+  <text x="646" y="400" fill="#BFE3E6" font-size="11">DIGITAL (PWM ~)</text>
+  <!-- bottom header -->
+  <rect x="460" y="570" width="140" height="20" rx="3" fill="#1A1C20"/>
+  <rect x="640" y="570" width="120" height="20" rx="3" fill="#1A1C20"/>
+  <g fill="#6B7280">
+    <circle cx="470" cy="580" r="4"/><circle cx="490" cy="580" r="4"/><circle cx="550" cy="580" r="4"/><circle cx="590" cy="580" r="4"/>
+    <circle cx="650" cy="580" r="4"/><circle cx="670" cy="580" r="4"/><circle cx="690" cy="580" r="4"/><circle cx="710" cy="580" r="4"/>
+    <circle cx="730" cy="580" r="4"/><circle cx="750" cy="580" r="4"/>
+  </g>
+  <g fill="#FFFFFF" font-size="11">
+    <text transform="translate(474 562) rotate(-90)" fill="#BFE3E6">IOREF</text>
+    <text transform="translate(494 562) rotate(-90)" fill="#BFE3E6">RESET</text>
+    <text transform="translate(514 562) rotate(-90)" font-weight="700">3.3V</text>
+    <text transform="translate(534 562) rotate(-90)" font-weight="700">5V</text>
+    <text transform="translate(554 562) rotate(-90)" fill="#BFE3E6">GND</text>
+    <text transform="translate(574 562) rotate(-90)" font-weight="700">GND</text>
+    <text transform="translate(594 562) rotate(-90)" fill="#BFE3E6">VIN</text>
+    <text transform="translate(654 562) rotate(-90)" fill="#BFE3E6">A0</text>
+    <text transform="translate(674 562) rotate(-90)" fill="#BFE3E6">A1</text>
+    <text transform="translate(694 562) rotate(-90)" fill="#BFE3E6">A2</text>
+    <text transform="translate(714 562) rotate(-90)" fill="#BFE3E6">A3</text>
+    <text transform="translate(734 562) rotate(-90)" fill="#BFE3E6">A4</text>
+    <text transform="translate(754 562) rotate(-90)" fill="#BFE3E6">A5</text>
+  </g>
+  <text x="470" y="506" fill="#BFE3E6" font-size="11">POWER</text>
+  <text x="650" y="506" fill="#BFE3E6" font-size="11">ANALOG IN</text>
+
+  <!-- ===================== AMP (PAM8403) ===================== -->
+  <rect x="930" y="350" width="200" height="200" rx="10" fill="#2E7D32"/>
+  <text x="1030" y="374" fill="#FFFFFF" font-size="13" font-weight="700" text-anchor="middle" font-family="Rubik, Segoe UI, sans-serif">AMP · PAM8403</text>
+  <rect x="1000" y="440" width="60" height="34" rx="3" fill="#1E2227"/>
+  <text x="1030" y="461" fill="#B8BEC6" font-size="10" text-anchor="middle">PAM8403</text>
+  <g fill="#D4AF37">
+    <rect x="924" y="394" width="12" height="12" rx="2"/><rect x="924" y="424" width="12" height="12" rx="2"/><rect x="924" y="454" width="12" height="12" rx="2"/>
+    <rect x="1124" y="379" width="12" height="12" rx="2"/><rect x="1124" y="409" width="12" height="12" rx="2"/>
+    <rect x="1124" y="469" width="12" height="12" rx="2"/><rect x="1124" y="499" width="12" height="12" rx="2"/>
+    <rect x="959" y="544" width="12" height="12" rx="2"/><rect x="999" y="544" width="12" height="12" rx="2"/>
+  </g>
+  <g fill="#FFFFFF" font-size="12" font-weight="700">
+    <text x="944" y="404">L</text>
+    <text x="944" y="434">G</text>
+    <text x="944" y="464">R</text>
+    <text x="1116" y="389" text-anchor="end">L+</text>
+    <text x="1116" y="419" text-anchor="end">L−</text>
+    <text x="1116" y="479" text-anchor="end">R+</text>
+    <text x="1116" y="509" text-anchor="end">R−</text>
+    <text x="965" y="536" text-anchor="middle">GND</text>
+    <text x="1005" y="536" text-anchor="middle">+5V</text>
+  </g>
+  <text x="944" y="418" fill="#C8E6C9" font-size="10">input</text>
+  <text x="1116" y="443" fill="#C8E6C9" font-size="10" text-anchor="end">speakers</text>
+
+  <!-- ===================== SPEAKERS ===================== -->
+  <g>
+    <circle cx="1226" cy="280" r="46" fill="#3A3F47"/><circle cx="1226" cy="280" r="32" fill="#596170"/><circle cx="1226" cy="280" r="10" fill="#2A2E35"/>
+    <rect x="1166" y="262" width="14" height="12" rx="2" fill="#D4AF37"/><rect x="1166" y="286" width="14" height="12" rx="2" fill="#D4AF37"/>
+    <text x="1226" y="218" fill="#1F2937" font-size="13" font-weight="700" text-anchor="middle" font-family="Rubik, Segoe UI, sans-serif">Speaker 1</text>
+    <text x="1173" y="256" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">+</text>
+    <text x="1173" y="314" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">−</text>
+  </g>
+  <g>
+    <circle cx="1226" cy="620" r="46" fill="#3A3F47"/><circle cx="1226" cy="620" r="32" fill="#596170"/><circle cx="1226" cy="620" r="10" fill="#2A2E35"/>
+    <rect x="1166" y="602" width="14" height="12" rx="2" fill="#D4AF37"/><rect x="1166" y="626" width="14" height="12" rx="2" fill="#D4AF37"/>
+    <text x="1226" y="690" fill="#1F2937" font-size="13" font-weight="700" text-anchor="middle" font-family="Rubik, Segoe UI, sans-serif">Speaker 2</text>
+    <text x="1173" y="596" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">+</text>
+    <text x="1173" y="654" fill="#1F2937" font-size="14" font-weight="700" text-anchor="middle">−</text>
+  </g>
+
+  <!-- ===================== WIRES (white halo, then color) ===================== -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M380 166V196H318V690H510V580"/>
+    <path d="M414 166V280H500V320"/>
+    <path d="M516 166V230H520V320"/>
+    <path d="M482 166V262H560V320"/>
+    <path d="M550 166V244H580V320"/>
+    <path d="M618 166V262H600V320"/>
+    <path d="M652 166V280H620V320"/>
+    <path d="M736 320V292H880V460H930"/><path d="M880 400H930"/>
+    <path d="M530 580V745H1005V550"/>
+    <path d="M570 580V725H965V550"/>
+    <path d="M1130 385H1148V268H1166"/><path d="M1130 415H1158V292H1166"/>
+    <path d="M1130 475H1158V608H1166"/><path d="M1130 505H1148V632H1166"/>
+  </g>
+  <g fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M380 166V196H318V690H510V580" stroke="#E53935"/>
+    <path d="M414 166V280H500V320" stroke="#212121"/>
+    <path d="M516 166V230H520V320" stroke="#1E88E5"/>
+    <path d="M482 166V262H560V320" stroke="#F9A825"/>
+    <path d="M550 166V244H580V320" stroke="#EF6C00"/>
+    <path d="M618 166V262H600V320" stroke="#78909C"/>
+    <path d="M652 166V280H620V320" stroke="#43A047"/>
+    <path d="M736 320V292H880V460H930" stroke="#8E24AA"/><path d="M880 400H930" stroke="#8E24AA"/>
+    <path d="M530 580V745H1005V550" stroke="#D81B60"/>
+    <path d="M570 580V725H965V550" stroke="#212121"/>
+    <path d="M1130 385H1148V268H1166" stroke="#C62828"/><path d="M1130 415H1158V292H1166" stroke="#37474F"/>
+    <path d="M1130 475H1158V608H1166" stroke="#C62828"/><path d="M1130 505H1148V632H1166" stroke="#37474F"/>
+  </g>
+  <circle cx="880" cy="400" r="6" fill="#8E24AA"/>
+  <g fill="#212121"><circle cx="380" cy="161" r="4"/></g>
+
+  <!-- ===================== CALLOUTS ===================== -->
+  <g font-size="12" font-weight="700">
+    <rect x="96" y="380" width="200" height="54" rx="8" fill="#FDECEA" stroke="#E53935"/>
+    <text x="196" y="402" fill="#B71C1C" text-anchor="middle">Screen VCC → 3.3V</text>
+    <text x="196" y="420" fill="#B71C1C" text-anchor="middle">never 5V</text>
+    <path d="M296 407H318" stroke="#E53935" stroke-width="2"/>
+
+    <rect x="752" y="760" width="200" height="30" rx="8" fill="#FCE4EC" stroke="#D81B60"/>
+    <text x="852" y="780" fill="#880E4F" text-anchor="middle">Amp +5V ← Uno 5V</text>
+
+    <rect x="760" y="240" width="150" height="40" rx="8" fill="#F3E5F5" stroke="#8E24AA"/>
+    <text x="835" y="256" fill="#4A148C" text-anchor="middle">D3 → amp L and R</text>
+    <text x="835" y="272" fill="#4A148C" text-anchor="middle" font-weight="400">same sound on both</text>
+
+    <rect x="1000" y="160" width="170" height="40" rx="8" fill="#FFF8E1" stroke="#F9A825"/>
+    <text x="1085" y="176" fill="#5D4037" text-anchor="middle">L− and R− are</text>
+    <text x="1085" y="192" fill="#5D4037" text-anchor="middle">NOT ground</text>
+
+    <text x="958" y="434" fill="#C8E6C9" font-size="10" font-weight="400">(leave empty)</text>
+  </g>
+  <g font-size="11" fill="#55606F">
+    <text x="40" y="770">Wire colors here are only to tell the wires apart. Use any color you have.</text>
+  </g>
+</svg>
+</div>
+    <figcaption>Top: the screen's 10 pins (3 stay empty). Middle: the Arduino, pins named as printed next to its headers. Right: the amp with its input, power and speaker pins, then the two speakers.</figcaption>
+  </figure>
+
+  <section class="section" aria-labelledby="list-h">
+    <h2 id="list-h">Wire by wire</h2>
+    <p class="progress" id="progress" aria-live="polite">0 of 14 wires done</p>
+
+    <div class="group">
+      <h3>1 · Screen</h3>
+      <label class="wire"><input type="checkbox" id="w1"><span class="sw" style="background:#E53935"></span><span class="pin">Screen VCC</span><span class="arrow">→</span><span class="pin">Uno 3.3V</span><span class="note">Bottom header, POWER side. Never 5V.</span></label>
+      <label class="wire"><input type="checkbox" id="w2"><span class="sw" style="background:#212121"></span><span class="pin">Screen GND</span><span class="arrow">→</span><span class="pin">Uno GND</span><span class="note">Top header, next to AREF (any GND works).</span></label>
+      <label class="wire"><input type="checkbox" id="w3"><span class="sw" style="background:#1E88E5"></span><span class="pin">Screen SCK</span><span class="arrow">→</span><span class="pin">Uno 13</span><span class="note">Clock.</span></label>
+      <label class="wire"><input type="checkbox" id="w4"><span class="sw" style="background:#F9A825"></span><span class="pin">Screen MOSI</span><span class="arrow">→</span><span class="pin">Uno ~11</span><span class="note">Data. Not MISO, the pin next to it.</span></label>
+      <label class="wire"><input type="checkbox" id="w5"><span class="sw" style="background:#EF6C00"></span><span class="pin">Screen LCD_CS</span><span class="arrow">→</span><span class="pin">Uno ~10</span><span class="note">Not RAM_CS, the pin next to it.</span></label>
+      <label class="wire"><input type="checkbox" id="w6"><span class="sw" style="background:#78909C"></span><span class="pin">Screen DC</span><span class="arrow">→</span><span class="pin">Uno ~9</span><span class="note"></span></label>
+      <label class="wire"><input type="checkbox" id="w7"><span class="sw" style="background:#43A047"></span><span class="pin">Screen RST</span><span class="arrow">→</span><span class="pin">Uno 8</span><span class="note">MISO, RAM_CS and BL stay empty.</span></label>
+    </div>
+
+    <div class="group">
+      <h3>2 · Amp</h3>
+      <label class="wire"><input type="checkbox" id="w8"><span class="sw" style="background:#8E24AA"></span><span class="pin">Uno ~3</span><span class="arrow">→</span><span class="pin">Amp L and R</span><span class="note">One wire from D3, split to both inputs. Same sound on both speakers.</span></label>
+      <label class="wire"><input type="checkbox" id="w9"><span class="sw" style="background:#D81B60"></span><span class="pin">Uno 5V</span><span class="arrow">→</span><span class="pin">Amp +5V</span><span class="note">May be printed VCC, 5V or +.</span></label>
+      <label class="wire"><input type="checkbox" id="w10"><span class="sw" style="background:#212121"></span><span class="pin">Uno GND</span><span class="arrow">→</span><span class="pin">Amp GND</span><span class="note">Power ground, printed GND or −. The input's G can stay empty.</span></label>
+    </div>
+
+    <div class="group">
+      <h3>3 · Speakers</h3>
+      <label class="wire"><input type="checkbox" id="w11"><span class="sw" style="background:#C62828"></span><span class="pin">Speaker 1, wire 1</span><span class="arrow">→</span><span class="pin">Amp L+</span><span class="note">The + wire if your speaker is marked.</span></label>
+      <label class="wire"><input type="checkbox" id="w12"><span class="sw" style="background:#37474F"></span><span class="pin">Speaker 1, wire 2</span><span class="arrow">→</span><span class="pin">Amp L−</span><span class="note">L− is not ground: never join it to GND.</span></label>
+      <label class="wire"><input type="checkbox" id="w13"><span class="sw" style="background:#C62828"></span><span class="pin">Speaker 2, wire 1</span><span class="arrow">→</span><span class="pin">Amp R+</span><span class="note"></span></label>
+      <label class="wire"><input type="checkbox" id="w14"><span class="sw" style="background:#37474F"></span><span class="pin">Speaker 2, wire 2</span><span class="arrow">→</span><span class="pin">Amp R−</span><span class="note">R− is not ground either.</span></label>
+    </div>
+    <button class="btn" type="button" id="reset">Clear all ticks</button>
+  </section>
+
+  <section class="section" aria-labelledby="amp-h">
+    <h2 id="amp-h">Finding the pins on your amp</h2>
+    <p class="lede">PAM8403 boards come in a few versions and print the same pins with different names. Match yours here.</p>
+    <div class="labels">
+      <div class="lab"><b>Input (from the Arduino)</b><p><code>L</code> <code>R</code> plus a ground marked <code>G</code>, <code>⏚</code> or <code>GND</code>. Sometimes <code>LIN</code> / <code>RIN</code>. Usually a row of 3 small pins on one edge.</p></div>
+      <div class="lab"><b>Power</b><p><code>+5V</code>, <code>VCC</code> or <code>+</code> takes the Uno's 5V. <code>GND</code> or <code>−</code> takes the Uno's GND. Usually 2 pins, sometimes marked in red.</p></div>
+      <div class="lab"><b>Speakers</b><p><code>L+ L−</code> and <code>R+ R−</code>, or <code>LOUT+ LOUT−</code>, <code>ROUT+ ROUT−</code>. On boards with 2 screw terminals, the one marked L is speaker 1 and the one marked R is speaker 2.</p></div>
+    </div>
+    <p class="lede">If your board looks different, send a photo of it in the chat and the pins will be marked for you.</p>
+  </section>
+
+  <section class="section" aria-labelledby="check-h">
+    <h2 id="check-h">Before you plug in the USB</h2>
+    <ol class="checks">
+      <li><b>Screen VCC is on 3.3V</b>, not 5V.</li>
+      <li><b>No speaker wire touches GND</b> or the Arduino.</li>
+      <li><b>D9 and D10 only go to the screen</b> (DC and LCD_CS).</li>
+      <li><b>Bare wire ends don't touch</b> each other, especially under the amp.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.wire input'));
+  var progress = document.getElementById('progress');
+  var KEY = 'masoud-wiring-ticks';
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } }
+  function save(state) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function update() {
+    var n = boxes.filter(function (b) { return b.checked; }).length;
+    progress.textContent = n === boxes.length ? 'All 14 wires done. Run the checks below, then plug in the USB.' : n + ' of 14 wires done';
+  }
+  var state = load();
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.id];
+    b.addEventListener('change', function () { state[b.id] = b.checked; save(state); update(); });
+  });
+  document.getElementById('reset').addEventListener('click', function () {
+    boxes.forEach(function (b) { b.checked = false; }); state = {}; save(state); update();
+  });
+  update();
+})();
+</script>

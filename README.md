@@ -32,6 +32,12 @@ blinks, glances, blush when he's happy, and every few seconds a mood with its ow
 
 `4 6 8 2 5` look around, `x` turns autonomous mode on and off. Each mood change is printed in Derja.
 
+### Wiring
+
+<img src="docs/masoud-wiring.svg" alt="Wiring: screen to Uno 3.3V, GND, 13, 11, 10, 9, 8; amp L and R from D3, +5V and GND; speaker 1 on L+ L-, speaker 2 on R+ R-">
+
+The full sheet with a tick-off checklist and a guide to amp pin labels is [`docs/wiring.html`](docs/wiring.html) (open it in a browser).
+
 ### His voice
 
 Masoud uses the same **PAM8403 amp and two small speakers** as the arduino-sound-player
