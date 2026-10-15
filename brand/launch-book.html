@@ -1,0 +1,753 @@
+<title>Masoud Launch Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800;900&family=Readex+Pro:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #F4F5F1;          /* limewash */
+  --surface: #FFFFFF;
+  --text: #0A0E17;        /* night */
+  --soft: #4C5566;
+  --line: #DCDFD6;
+  --chip: #E8EAE3;
+  --accent-text: #7A5800;
+  --yellow: #FFC61A;
+  --cyan: #00D7FF;
+  --chili: #FF4A2E;
+  --night: #0A0E17;
+  --head: #141A26;
+  --shadow: 0 24px 48px -28px rgba(10, 14, 23, .55);
+  --display: "Rubik", "Segoe UI", system-ui, sans-serif;
+  --body: "Readex Pro", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0A0E17; --surface: #121826; --text: #F4F5F1; --soft: #A3ACBD; --line: #232B3B;
+    --chip: #1A2233; --accent-text: #FFC61A; --head: #1A2233;
+    --shadow: 0 24px 48px -28px rgba(0, 0, 0, .9);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0A0E17; --surface: #121826; --text: #F4F5F1; --soft: #A3ACBD; --line: #232B3B;
+  --chip: #1A2233; --accent-text: #FFC61A; --head: #1A2233;
+  --shadow: 0 24px 48px -28px rgba(0, 0, 0, .9);
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 400 17px/1.6 var(--body); padding-inline: 20px; }
+.wrap { max-width: 1120px; margin-inline: auto; display: grid; gap: 96px; padding-block: 24px 80px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.02; text-wrap: balance; }
+h2 { font-size: clamp(32px, 4.6vw, 52px); font-weight: 900; letter-spacing: -.02em; }
+h3 { font-size: 21px; font-weight: 800; line-height: 1.2; }
+p { margin: 0; }
+.lede { color: var(--soft); max-width: 64ch; }
+.eyebrow { font: 600 13px/1 var(--body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent-text); display: flex; align-items: center; gap: 8px; }
+.eyebrow::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--yellow); }
+[lang="ar"] { font-family: var(--display); direction: rtl; }
+.section { display: grid; gap: 32px; }
+.head-block { display: grid; gap: 14px; }
+.grid { display: grid; gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: grid; gap: 10px; align-content: start; }
+.card p { color: var(--soft); font-size: 16px; }
+.note { font-size: 14px; color: var(--soft); }
+.tab { font-variant-numeric: tabular-nums; }
+kbd { font: 600 12px/1 var(--mono); background: var(--chip); color: var(--text); border-radius: 6px; padding: 4px 7px; }
+
+/* top */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.top .brand { display: flex; align-items: center; gap: 10px; font: 900 24px/1 var(--display); letter-spacing: -.02em; }
+.top .brand img { width: 36px; height: 36px; }
+.top .meta { display: flex; gap: 12px; align-items: center; color: var(--soft); font-size: 14px; flex-wrap: wrap; }
+.btn { font: 600 15px/1 var(--body); border: 0; border-radius: 999px; padding: 12px 18px; min-height: 44px; cursor: pointer; background: var(--chip); color: var(--text); display: inline-flex; align-items: center; gap: 8px; }
+.btn.primary { background: var(--yellow); color: #0A0E17; }
+.btn:focus-visible, .mood:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+
+/* hero */
+.hero { display: grid; gap: 44px; align-items: center; }
+@media (min-width: 900px) { .hero { grid-template-columns: 1.1fr 1fr; } }
+.wordmark { font: 900 clamp(64px, 11vw, 136px)/.86 var(--display); letter-spacing: -.045em; display: flex; align-items: baseline; white-space: nowrap; }
+.wordmark .o { width: .66em; height: .66em; margin-inline: .02em .04em; transform: translateY(.06em); flex: none; }
+.ar-name { font: 800 clamp(36px, 5vw, 56px)/1.25 var(--display); margin-top: 4px; }
+.tagline { display: grid; gap: 2px; margin-top: 20px; }
+.tagline .derja { font: 800 28px/1.15 var(--display); }
+.tagline .derja mark { background: var(--yellow); color: #0A0E17; padding: 0 .18em; border-radius: 6px; }
+.tagline .gloss { color: var(--soft); }
+.hero .lede { margin-top: 18px; }
+.hero-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.hero-facts span { background: var(--chip); border-radius: 999px; padding: 6px 12px; font-size: 14px; font-weight: 500; }
+
+.robot { display: grid; justify-items: center; gap: 16px; }
+.bot { width: min(100%, 440px); display: grid; justify-items: center; cursor: pointer; border: 0; background: none; padding: 0; }
+.bot-head { width: 100%; background: linear-gradient(180deg, #232B3B, #141A26 42%); border-radius: 56px; padding: 26px; position: relative; box-shadow: var(--shadow), inset 0 2px 0 rgba(255,255,255,.08); }
+.bot-head::after { content: ""; position: absolute; top: -12px; right: 18px; width: 36px; height: 36px; background: var(--yellow);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); }
+.bot-neck { width: 34%; height: 18px; background: #141A26; border-radius: 0 0 14px 14px; }
+.bot-base { width: 62%; height: 22px; background: var(--yellow); border-radius: 12px; margin-top: -2px; box-shadow: var(--shadow); }
+.screen { background: #000; border-radius: 28px; padding: 14px; box-shadow: inset 0 0 0 2px #2A3242; }
+.screen canvas { display: block; width: 100%; height: auto; aspect-ratio: 160 / 128; image-rendering: pixelated; border-radius: 8px; }
+.bot.shaking .bot-head { animation: shake .6s cubic-bezier(.36,.07,.19,.97); }
+@keyframes shake {
+  10%, 90% { transform: translate(-2px, 1px) rotate(-1deg); }
+  20%, 80% { transform: translate(5px, -2px) rotate(2deg); }
+  30%, 50%, 70% { transform: translate(-9px, 2px) rotate(-3deg); }
+  40%, 60% { transform: translate(9px, -1px) rotate(3deg); }
+}
+.moods { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 470px; }
+.mood { font: 600 14px/1 var(--body); background: var(--chip); color: var(--text); border: 2px solid transparent; border-radius: 999px; padding: 10px 13px; min-height: 42px; cursor: pointer; transition: transform .15s ease, border-color .15s ease; }
+.mood:hover { border-color: var(--yellow); transform: translateY(-1px); }
+.mood[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+.robot .note { text-align: center; max-width: 44ch; }
+
+/* why */
+.pillars { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.pillar .k { font: 800 13px/1 var(--mono); color: var(--accent-text); }
+
+/* logo */
+.logo-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.plate { border-radius: 24px; min-height: 220px; display: grid; place-items: center; gap: 12px; padding: 28px; border: 1px solid var(--line); text-align: center; }
+.plate .cap { font-size: 13px; opacity: .8; }
+.plate.light { background: #F4F5F1; color: #0A0E17; }
+.plate.dark { background: #0A0E17; color: #F4F5F1; }
+.plate.yellow { background: #FFC61A; color: #0A0E17; border-color: #FFC61A; }
+.plate .wm { font: 900 44px/1 var(--display); letter-spacing: -.045em; display: flex; align-items: baseline; }
+.plate .wm svg { width: .66em; height: .66em; margin-inline: .02em .04em; transform: translateY(.06em); }
+.plate .ar { font: 800 34px/1.2 var(--display); }
+.icon { width: 96px; height: 96px; border-radius: 24px; display: grid; place-items: center; }
+.icon svg { width: 74px; height: 74px; }
+.rules { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); font-size: 15px; color: var(--soft); }
+.rules b { color: var(--text); }
+.files { font: 500 14px/1.6 var(--mono); color: var(--soft); background: var(--chip); border-radius: 14px; padding: 14px 16px; overflow-x: auto; }
+
+/* colors */
+.swatches { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.swatch { border-radius: 20px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+.swatch .c { height: 104px; padding: 10px 12px; display: flex; align-items: flex-end; font: 800 14px/1 var(--display); }
+.swatch .m { padding: 12px 14px 14px; display: grid; gap: 2px; }
+.swatch .m b { font: 800 18px/1.1 var(--display); }
+.swatch .m code { font: 500 13px/1.4 var(--mono); color: var(--soft); }
+.swatch .m span { font-size: 14px; color: var(--soft); }
+.ratio { grid-template-columns: 6fr 2fr 1fr 1fr; display: grid; height: 18px; border-radius: 9px; overflow: hidden; border: 1px solid var(--line); }
+
+/* type */
+.type-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.spec .big { font: 900 72px/1 var(--display); letter-spacing: -.04em; }
+.spec .big-ar { font: 800 52px/1.3 var(--display); }
+.spec .label { font: 600 12px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-text); }
+.spec .body-sample { font-size: 18px; color: var(--soft); }
+.scale { display: grid; gap: 6px; }
+.scale div { display: flex; gap: 14px; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.scale code { font: 500 12px/1 var(--mono); color: var(--soft); width: 64px; flex: none; }
+
+/* voice */
+.traits { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.moods-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.say { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 12px; display: grid; gap: 8px; }
+.say img { width: 100%; height: auto; aspect-ratio: 160/128; image-rendering: pixelated; border-radius: 12px; background: #000; display: block; }
+.say .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-inline: 4px; }
+.say b { font: 800 21px/1.1 var(--display); }
+.say .ar { font: 700 18px/1.1 var(--display); color: var(--soft); }
+.say p { font-size: 14px; color: var(--soft); padding-inline: 4px; }
+.say.special { border: 2px solid var(--yellow); }
+.lines { border-top: 1px solid var(--line); }
+.line { display: grid; grid-template-columns: minmax(200px, 1.2fr) 1.4fr minmax(140px, .9fr); gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.line b { font: 800 20px/1.2 var(--display); }
+.line span { color: var(--soft); }
+.line [lang="ar"] { color: var(--text); font-size: 19px; text-align: right; }
+@media (max-width: 640px) { .line { grid-template-columns: 1fr; gap: 4px; } .line [lang="ar"] { text-align: left; } }
+
+/* setup */
+.steps { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); counter-reset: step; list-style: none; padding: 0; margin: 0; }
+.steps li { counter-increment: step; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 20px; display: grid; gap: 8px; align-content: start; }
+.steps li::before { content: counter(step); font: 900 15px/1 var(--display); width: 34px; height: 34px; border-radius: 10px; background: var(--yellow); color: #0A0E17; display: grid; place-items: center; }
+.steps li p { color: var(--soft); font-size: 15px; }
+.steps li .say-it { font: 700 15px/1.3 var(--display); color: var(--text); }
+.minds { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.mind { border-radius: 24px; padding: 24px; display: grid; gap: 12px; align-content: start; border: 2px solid var(--line); background: var(--surface); }
+.mind.rec { border-color: var(--yellow); }
+.mind .tagm { font: 600 12px/1 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--accent-text); }
+.mind h3 { font-size: 26px; }
+.mind ul { margin: 0; padding-left: 18px; color: var(--soft); font-size: 15px; display: grid; gap: 4px; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 620px; }
+th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 700 13px/1.2 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tfoot td { font-weight: 700; }
+
+/* inside */
+.flow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.flow span { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; font-size: 15px; font-weight: 500; }
+.flow span.mindbox { background: var(--yellow); color: #0A0E17; border-color: var(--yellow); font-weight: 600; }
+.flow i { font-style: normal; color: var(--soft); }
+.status { background: var(--night); color: #F4F5F1; border-radius: 24px; padding: 24px; display: grid; gap: 16px; grid-template-columns: 1fr; align-items: center; }
+@media (min-width: 760px) { .status { grid-template-columns: 220px 1fr; } }
+.status img { width: 100%; image-rendering: pixelated; border-radius: 10px; }
+.status p { color: #C9CFDA; }
+.status b { color: #FFC61A; }
+
+/* launch */
+.position { background: var(--yellow); color: #0A0E17; border-radius: 28px; padding: clamp(24px, 4vw, 44px); font: 700 clamp(22px, 2.8vw, 32px)/1.3 var(--display); letter-spacing: -.01em; }
+.position small { display: block; font: 500 15px/1.5 var(--body); margin-top: 14px; }
+.segments { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.prices { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.price { border-radius: 24px; padding: 24px; display: grid; gap: 8px; align-content: start; background: var(--surface); border: 1px solid var(--line); }
+.price .amt { font: 900 44px/1 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.price .amt small { font: 600 16px/1 var(--body); letter-spacing: 0; color: var(--soft); }
+.price p { color: var(--soft); font-size: 15px; }
+.price.hero-price { background: var(--night); color: #F4F5F1; border-color: var(--night); }
+.price.hero-price p, .price.hero-price .amt small { color: #C9CFDA; }
+.phases { display: grid; gap: 0; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: var(--surface); }
+.phase { padding: 22px; display: grid; gap: 8px; align-content: start; border-right: 1px solid var(--line); }
+.phase:last-child { border-right: 0; }
+.phase .when { font: 700 13px/1 var(--mono); color: var(--accent-text); }
+.phase ul { margin: 0; padding-left: 18px; color: var(--soft); font-size: 15px; display: grid; gap: 4px; }
+.checklist { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.check { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; }
+.check .box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--soft); margin-top: 3px; }
+.check p { color: var(--soft); font-size: 15px; }
+.check b { color: var(--text); }
+footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--soft); font-size: 14px; border-top: 1px solid var(--line); padding-top: 20px; }
+
+@media (prefers-reduced-motion: reduce) { .mood { transition: none; } .bot.shaking .bot-head { animation: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="mark" viewBox="0 0 120 120">
+      <rect x="6" y="14" width="108" height="92" rx="30" fill="#0A0E17"/>
+      <rect x="30" y="40" width="24" height="34" rx="9" fill="#00D7FF"/>
+      <path d="M66 70V58a14 14 0 0 1 28 0v12h-8V58a6 6 0 0 0-12 0v12z" fill="#00D7FF"/>
+    </symbol>
+    <symbol id="mark-rev" viewBox="0 0 120 120">
+      <rect x="6" y="14" width="108" height="92" rx="30" fill="#F4F5F1"/>
+      <rect x="30" y="40" width="24" height="34" rx="9" fill="#0A0E17"/>
+      <path d="M66 70V58a14 14 0 0 1 28 0v12h-8V58a6 6 0 0 0-12 0v12z" fill="#0A0E17"/>
+    </symbol>
+    <symbol id="spark" viewBox="0 0 24 24"><path d="M12 0l3.2 8.8L24 12l-8.8 3.2L12 24l-3.2-8.8L0 12l8.8-3.2z" fill="#FFC61A"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMC4wMCAwLjAwKSBzY2FsZSgxLjAwMDApIj48cmVjdCB4PSI2IiB5PSIxNCIgd2lkdGg9IjEwOCIgaGVpZ2h0PSI5MiIgcng9IjMwIiBmaWxsPSIjMEEwRTE3Ii8+PHJlY3QgeD0iMzAiIHk9IjQwIiB3aWR0aD0iMjQiIGhlaWdodD0iMzQiIHJ4PSI5IiBmaWxsPSIjMDBEN0ZGIi8+PHBhdGggZD0iTTY2IDcwVjU4YTE0IDE0IDAgMCAxIDI4IDB2MTJoLThWNThhNiA2IDAgMCAwLTEyIDB2MTJ6IiBmaWxsPSIjMDBEN0ZGIi8+PHBhdGggZD0iTTEwNCAybDMuMiA4LjhMMTE2IDE0bC04LjggMy4yTDEwNCAyNmwtMy4yLTguOEw5MiAxNGw4LjgtMy4yeiIgZmlsbD0iI0ZGQzYxQSIvPjwvZz48L3N2Zz4NCg==" alt="">masoud</div>
+    <div class="meta"><span>Launch book · v1 · October 2026</span><button class="btn" id="theme" type="button">Switch theme</button></div>
+  </header>
+
+  <section class="hero" aria-labelledby="hero-name">
+    <div>
+      <p class="eyebrow">The lucky desk buddy</p>
+      <h1 id="hero-name" class="wordmark" aria-label="masoud">mas<svg class="o" viewBox="0 0 120 120" aria-hidden="true"><use href="#mark"/></svg>ud</h1>
+      <p class="ar-name" lang="ar">مسعود</p>
+      <div class="tagline">
+        <p class="derja">Kol nhar, <mark>mas3oud</mark>.</p>
+        <p class="gloss"><span lang="ar">كل نهار، مسعود</span> · Every day, a lucky one.</p>
+      </div>
+      <p class="lede">Masoud is a little robot that lives on your desk. He has a face that shows how he feels, a voice,
+        a shake sensor, and an AI mind you choose on day one: on your own computer, in the cloud, or none at all.
+        He speaks Derja first.</p>
+      <div class="hero-facts"><span>9 moods</span><span>Talks back</span><span>Feels a shake</span><span>Local or cloud AI</span><span>Made in Tunisia</span></div>
+    </div>
+    <div class="robot">
+      <button class="bot" id="bot" type="button" aria-label="Shake Masoud">
+        <span class="bot-head" style="display:block"><span class="screen" style="display:block">
+          <canvas id="face" width="160" height="128" role="img" aria-label="Masoud's face, live"></canvas>
+        </span></span>
+        <span class="bot-neck" style="display:block"></span>
+        <span class="bot-base" style="display:block"></span>
+      </button>
+      <div class="moods" id="moods" role="group" aria-label="Set Masoud's mood"></div>
+      <p class="note">This is his real face engine, pixel for pixel. Tap a mood, or tap Masoud to shake him.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="name">
+    <div class="head-block">
+      <p class="eyebrow">The name</p>
+      <h2 id="name">Masoud means the lucky one</h2>
+      <p class="lede"><span lang="ar">مسعود</span> is an old, warm Tunisian name: the happy one, the one luck follows.
+        Everyone has an uncle or a neighbor called Masoud. A robot with that name feels like family from the first day,
+        and the tagline writes itself: with Masoud on your desk, every day is <i>mas3oud</i>.</p>
+    </div>
+    <div class="grid pillars">
+      <div class="card pillar"><span class="k">01 · FACE FIRST</span><h3>He shows it before he says it</h3><p>Nine moods on a real screen. You know how Masoud feels across the room, before he says a word.</p></div>
+      <div class="card pillar"><span class="k">02 · YOUR MIND, YOUR CHOICE</span><h3>Privacy is a setting, not a promise</h3><p>On day one you pick his mind: your own computer, the cloud, or no AI at all. Change it any time.</p></div>
+      <div class="card pillar"><span class="k">03 · TUNISIAN SOUL</span><h3>Derja first, jokes included</h3><p>He talks like a cheeky cousin, in Derja, French, English or Arabic. Imported robots don't.</p></div>
+      <div class="card pillar"><span class="k">04 · MADE TO TINKER</span><h3>Built here, open inside</h3><p>Designed and assembled in Tunisia, with open firmware so makers and schools can teach him new tricks.</p></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="logo">
+    <div class="head-block">
+      <p class="eyebrow">Logo</p>
+      <h2 id="logo">A wink, because he's lucky</h2>
+      <p class="lede">The mark is Masoud's head mid-wink: one eye open, one eye smiling shut. It works at 16 pixels on a phone and at 2 meters on a stand. In the wordmark the head stands in for the "o", and a small yellow spark marks the luck.</p>
+    </div>
+    <div class="grid logo-grid">
+      <div class="plate light">
+        <div class="wm" aria-label="masoud">mas<svg viewBox="0 0 120 120" aria-hidden="true"><use href="#mark"/></svg>ud</div>
+        <span class="cap">Primary wordmark on Limewash</span>
+      </div>
+      <div class="plate dark">
+        <div class="wm" aria-label="masoud">mas<svg viewBox="0 0 120 120" aria-hidden="true"><use href="#mark-rev"/></svg>ud</div>
+        <span class="cap">Reversed: on dark grounds the head turns white</span>
+      </div>
+      <div class="plate yellow">
+        <div class="ar" lang="ar">مسعود</div>
+        <span class="cap">Arabic name in Rubik, on Lucky Yellow</span>
+      </div>
+      <div class="plate light">
+        <div style="display:flex;gap:16px;align-items:center">
+          <div class="icon" style="background:#FFC61A"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#mark"/></svg></div>
+          <div class="icon" style="background:#0A0E17;position:relative"><svg viewBox="0 0 120 120" aria-hidden="true"><use href="#mark-rev"/></svg><svg viewBox="0 0 24 24" style="position:absolute;top:8px;right:8px;width:18px;height:18px" aria-hidden="true"><use href="#spark"/></svg></div>
+        </div>
+        <span class="cap">App and social icons</span>
+      </div>
+    </div>
+    <div class="grid rules">
+      <p><b>Clear space:</b> keep one eye's width empty around the mark on every side.</p>
+      <p><b>Smallest size:</b> 16 px for the mark, 64 px wide for the wordmark.</p>
+      <p><b>Eyes:</b> cyan on the night head, or night on a white head. Never two colors at once.</p>
+      <p><b>Don't:</b> add a mouth, rotate the head, stretch it, or put it on a busy photo without a plate.</p>
+    </div>
+    <div class="files">brand/masoud-mark.svg · masoud-app-icon.svg · masoud-app-icon-night.svg · masoud-wordmark.svg · masoud-wordmark-white.svg · masoud-wordmark-on-yellow.svg</div>
+  </section>
+
+  <section class="section" aria-labelledby="colors">
+    <div class="head-block">
+      <p class="eyebrow">Colors</p>
+      <h2 id="colors">Night, yellow, and a cyan glow</h2>
+      <p class="lede">Night and cyan come straight from his screen: black glass and glowing eyes. Lucky Yellow is the brand's voice. It goes on the box, the base, the buttons and the ads, always with night text on it.</p>
+    </div>
+    <div class="grid swatches">
+      <div class="swatch"><div class="c" style="background:#0A0E17;color:#F4F5F1">Aa</div><div class="m"><b>Night</b><code>#0A0E17</code><span>His head and screen. Text.</span></div></div>
+      <div class="swatch"><div class="c" style="background:#FFC61A;color:#0A0E17">Aa</div><div class="m"><b>Lucky Yellow</b><code>#FFC61A</code><span>Brand color. Fills, never text.</span></div></div>
+      <div class="swatch"><div class="c" style="background:#00D7FF;color:#0A0E17">Aa</div><div class="m"><b>Eye Cyan</b><code>#00D7FF</code><span>His eyes. Only on Night.</span></div></div>
+      <div class="swatch"><div class="c" style="background:#F4F5F1;color:#0A0E17;border-bottom:1px solid #DCDFD6">Aa</div><div class="m"><b>Limewash</b><code>#F4F5F1</code><span>Medina walls. Backgrounds.</span></div></div>
+      <div class="swatch"><div class="c" style="background:#FF4A2E;color:#0A0E17">Aa</div><div class="m"><b>Harissa</b><code>#FF4A2E</code><span>Angry face, alerts. Rare.</span></div></div>
+      <div class="swatch"><div class="c" style="background:#4C5566;color:#F4F5F1">Aa</div><div class="m"><b>Steel</b><code>#4C5566</code><span>Secondary text, specs.</span></div></div>
+    </div>
+    <div class="grid" style="gap:8px">
+      <div class="ratio" role="img" aria-label="Color proportions: Limewash 60 percent, Night 20 percent, Lucky Yellow 10 percent, Eye Cyan 10 percent">
+        <span style="background:#F4F5F1"></span><span style="background:#0A0E17"></span><span style="background:#FFC61A"></span><span style="background:#00D7FF"></span>
+      </div>
+      <p class="note">Rough proportions on a page or a box: 60% Limewash, 20% Night, 10% Yellow, 10% Cyan (only inside his eyes).</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="type">
+    <div class="head-block">
+      <p class="eyebrow">Typography</p>
+      <h2 id="type">Rubik shouts, Readex Pro explains</h2>
+      <p class="lede">Rubik's soft corners match his rounded head, and its heavy weights hold up on a box at arm's length. Both families cover Latin and Arabic, so every message ships in Derja, French and Arabic without a second font.</p>
+    </div>
+    <div class="grid type-grid">
+      <div class="card spec">
+        <span class="label">Display · Rubik Black 900</span>
+        <span class="big">Aslema!</span>
+        <span class="big-ar" lang="ar">أسلامة!</span>
+      </div>
+      <div class="card spec">
+        <span class="label">Text · Readex Pro 400</span>
+        <p class="body-sample">Masoud sleeps when you're away, wakes up when you sit down, and asks "Chbik?" when you've been too quiet for an hour.</p>
+        <div class="scale">
+          <div><code>Hero</code><span style="font:900 40px/1 var(--display);letter-spacing:-.03em">96–136</span></div>
+          <div><code>H2</code><span style="font:900 28px/1 var(--display)">32–52</span></div>
+          <div><code>H3</code><span style="font:800 21px/1 var(--display)">21</span></div>
+          <div><code>Body</code><span>17 / 1.6</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="voice">
+    <div class="head-block">
+      <p class="eyebrow">Voice and face</p>
+      <h2 id="voice">He talks like your favorite cousin</h2>
+      <p class="lede">Short sentences. Derja first. A little dramatic, never mean. When he doesn't know something, he says so and makes a joke about it.</p>
+    </div>
+    <div class="grid traits">
+      <div class="card"><h3>Cheeky</h3><p>Teases you about coffee and deadlines. Never about how you look.</p></div>
+      <div class="card"><h3>Loyal</h3><p>Remembers your name, says good morning, notices when you're down.</p></div>
+      <div class="card"><h3>Curious</h3><p>Looks around, asks questions back, gets suspicious of strangers.</p></div>
+      <div class="card"><h3>Honest</h3><p>Says which mind he's using and when your words leave the house.</p></div>
+    </div>
+    <div class="grid moods-grid">
+      <div class="say"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAQMAAAC2rfBYAAAABlBMVEUA1PgAAACawF4eAAAAgElEQVR42u3VPQrCMBiA4Scfgh17hB7Fo3k0jxJv4NhBrIMpX0EcipOSLA+8kB8IJGXxPkKPPf53vJYybC0LCrZG0zkVeMAlFbhDTQVmuKWiaU53Hr567bbab7PH34wTHNKd00cYUtE0pqKtbUrFuu4p/fwIqBy3lv5v9tjj1/EJgnsjm1V4dTIAAAAASUVORK5CYII=" alt="Calm: two cyan rounded eyes"><div class="row"><b>Labes</b><span class="ar" lang="ar">لاباس</span></div><p>Calm, just watching. <kbd>n</kbd></p></div>
+      <div class="say"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAQMAAAC2rfBYAAAABlBMVEUA1PgAAACawF4eAAAA10lEQVR42u3VQWqEQBCF4b8rQtylbzDeJB4tOclcxSPkBvEILmbhMJKXhT1ThcGAkFVoNx88X9nYLZjEz8uoYQ3/efhe7t2VpAVeo0jSBC9RA/iAS9QABviKJgEJiFqRNxdjMzqUcAEY3f03mgEmd7858Twyu6XZZqJrmFuiBox0DYtbmn1Zr/f9HJB4crV/HGndh4f7TYN+45Fzb6CLHhvvWsiNe3A8A7TuL+N5LTw0NkEuYQPQudj9Eb27ft4naY4iSWfpGkWSPqVbNNXfRA1rWMO/Dr8BahOM1w/skNcAAAAASUVORK5CYII=" alt="Happy: eyes curved into arches"><div class="row"><b>Mrigel!</b><span class="ar" lang="ar">مريڨل</span></div><p>All good. He bounces a little. <kbd>h</kbd></p></div>
+      <div class="say"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAQMAAAC2rfBYAAAABlBMVEUggPgAAABQ/zIjAAAAwklEQVR42u2VsQ3CMBBFny0k0oUNYBQ2S0bJKIyQEVK6pEgBCPIp7IsNVDQUyG6+/tPdP51lyU58Hk+FFVZYIXDtQYc3GE6whDc4THC/Wb8kSQutdKaLLsFLhPvoUnt4kVQJW2kyFysfNuFYTJ8NjgUcDc5FJpZJzrzmtQ9re8gwrHDI8GaZCzmTLq15KeE+DQrlBYf6wH4HdwBN1i/bG2KGKR7YpPdiireIY1acAAeU6gH66FdFks7QlurqB13h/8InDoh9DeGP5vQAAAAASUVORK5CYII=" alt="Sad: blue drooping eyes"><div class="row"><b>Mghboun</b><span class="ar" lang="ar">مغبون</span></div><p>Down. Eyes droop and go blue. <kbd>s</kbd></p></div>
+      <div class="say"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAQMAAAC2rfBYAAAABlBMVEX4LBgAAADNOp/OAAAA3ElEQVR42u2VMY7CMBBFn4eVlpIbLDchN9s9CkfJEXIEii0oEaLKBv4WZOwJAdEg0diFv/U08z2ejJQk5suosMIKXwEv9+DfTwArAEmHL+U1fEoygH0JPA1j+qEvsGNM3/Gd00mSkNSSTQeSe/KbLUPx52Kp8qKGqBYv9QyLXi42CemmXWoA1ExhB9Df9PMUe+DwDLD1ciW1ABvp4sBCe/rZNzqGtmYo2NWhfQZT0IeR6/G8nqVbUPPZD1oiP4IasOS6uWIetCqKAYvx6kUuQdcRSVFT/fFVWOG74T+k/WyBw66sxwAAAABJRU5ErkJggg==" alt="Angry: red eyes slanted inward"><div class="row"><b>Harissa!</b><span class="ar" lang="ar">هريسة</span></div><p>Spicy. Red, slanted, trembling. <kbd>a</kbd></p></div>
+      <div class="say"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAQMAAAC2rfBYAAAABlBMVEUA1PgAAACawF4eAAAAsElEQVR42u3VwU3EMBAF0OcRQtxIB0spWwqdkBIoaUuhhIVTDijDYRMm0rKHnBDIvrzRly3Zlkdu6XqEHvbwV8L31oatAa98bJWZM7yUKTMnOJQZmOBcikVTKfAGn6XACeby5823pF329u3NYy49N67uvKX5Up1W+7Pp4d8Ml/y4umf5ro4zQitvzzwuxarAE9yVAgM8lGLRUArcw3NJZuZI2yoz88zj1tY/6B7+3/ALTNRWx0wLU20AAAAASUVORK5CYII=" alt="Surprised: big wide eyes"><div class="row"><b>Ya mimti!</b><span class="ar" lang="ar">يا ميمتي</span></div><p>"Oh my mum!" Wide open. <kbd>u</kbd></p></div>
+      <div class="say"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAgMAAADxDYqIAAAADFBMVEUAjKgAaIAAWGgAAACPdNDxAAAA3ElEQVR42mP8z0AcYGIYVTiqcPAoZCGs5FsCA9MKGljN8J8I8Df+/3+iTPyhQKSJ1/8TZ+K/DiI980OBSM9c/0+c1f86iAxHiM2M/6kdhYz/B3F6/L2BMYS6VrOGshDp69+sRHrmI7G+PkJkgENsJsbE1WtICnDG0ZprVOGowlGFw0IhtBr+gBDgx8Ynsk0xGuADp5AHIWKAjU8Lq2F1ISMiOWHlw008ABNnxs6HNws/oCU/dD48PfKgeRKdj6ivGVGdhMGH+/oPhLLHxR9tAYwqHFU4qnBU4dBVCABILMMB0+QULQAAAABJRU5ErkJggg==" alt="Sleepy: half-closed eyes with Z letters"><div class="row"><b>Na3sen</b><span class="ar" lang="ar">نعسان</span></div><p>Sleepy. Slow blinks, Zzz. <kbd>z</kbd></p></div>
+      <div class="say"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAQMAAAC2rfBYAAAABlBMVEX4PJAAAACFN5aYAAAA4ElEQVR42u3VMZLCMAyF4d8ihbvNDchN8M3I3owjcATKlCkoKDKIQnYsYJdhi52hcJov8zKWbKVwUJ4foYUtbOH/hQLfXlT1wm5hW1UBLpwW5ioCHJkmzlUEOLCcuFZ/7o6qQhihqqhe7eu+aN3fPlFedih+wJBznop/WR4Ugo1rFQFGgFD9vWbKL2ltoqozwFdVBYgAfZWgubhX8lw3XgEYoPPKQ724htHqrwpAB4NXHjaeykAgYLdF1s4+2oCKcj91ceHQ4X3xO/qI18LY47WwG/DmdglvaHdcC1v4keENd51VBSOscTsAAAAASUVORK5CYII=" alt="In love: pink heart eyes"><div class="row"><b>Mghrom</b><span class="ar" lang="ar">مغروم</span></div><p>In love. Heart eyes that beat. <kbd>l</kbd></p></div>
+      <div class="say"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAQMAAAC2rfBYAAAABlBMVEUA1PgAAACawF4eAAAAhElEQVR42u3VQQoCMQyF4f8Nol16hB7BI8zRPJreyOW40Oci2UwFETcKJotCv7YkhEJknmOisLDwp/AsSZqrId/FmyRtqiGvcQL4vEsCaOPNI7AfcQY69Ngk9jzIsG17Adm+BGVxu5h/LbK+Uec2ljVmvcPzE3BA6wl7beg+Yn2bwv/EB0tSF7hjBhkRAAAAAElFTkSuQmCC" alt="Suspicious: one squinting eye"><div class="row"><b>Chkoun?!</b><span class="ar" lang="ar">شكون؟</span></div><p>"Who's there?!" One eye squints. <kbd>?</kbd></p></div>
+      <div class="say special"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAQMAAAC2rfBYAAAABlBMVEUA1PgAAACawF4eAAAA80lEQVR42u2UQU7DMBBFn90IukAqNyg3wUfhKD4KR/FR0htkGVDIZ2GnHeMWNrBA8kiR7Ofx1/d4HCfa8HTYYYe/BN9CRSVJijuZcAKQR832dwgNnGFs4ARTA0eYgdNgYYIFeP2wlgAnrfCcpwbOcJAkeQDlb87K9dmnrFzgChAZy+jn0iVKBSyMt4oca5iuauq8dIHhL+59ra94BdACpaD+2iYP4G5pugbG2sY3lgIMWSBc4BPsm1ac4CjFbZozH+ClbVqcpATOZJLusrK3mZvyvb6cnf3mwcIBHhu4O3uwTyU5mf4ssRztO+q/oA47/BfwE8mIr4/XLWpeAAAAAElFTkSuQmCC" alt="Dizzy: round eyes rolling in circles"><div class="row"><b>Dawkha!</b><span class="ar" lang="ar">دوخة</span></div><p>Shake him and his eyes roll for 3 s. <kbd>d</kbd></p></div>
+    </div>
+    <div class="lines" aria-label="Signature lines">
+      <div class="line"><b>Aslema! Ena Masoud.</b><span>"Hi! I'm Masoud." First boot, every boot.</span><span lang="ar">أسلامة! أنا مسعود</span></div>
+      <div class="line"><b>Sba7 el khir! Nharek mas3oud.</b><span>"Good morning, have a lucky day." When you sit down.</span><span lang="ar">صباح الخير! نهارك مسعود</span></div>
+      <div class="line"><b>Dawkha! Bchwaya 3liya!</b><span>"I'm dizzy! Easy on me!" When shaken.</span><span lang="ar">دوخة! بالشوية عليا</span></div>
+      <div class="line"><b>Stanna chwaya, nfakker...</b><span>"Hold on, I'm thinking..." While his mind works.</span><span lang="ar">استنى شوية، نفكّر</span></div>
+      <div class="line"><b>Chbik sakket?</b><span>"Why so quiet?" After an hour of silence.</span><span lang="ar">شبيك ساكت؟</span></div>
+      <div class="line"><b>Mrigel! Ya3tik essa7a.</b><span>"Done, well done you." When a task is finished.</span><span lang="ar">مريڨل! يعطيك الصحة</span></div>
+      <div class="line"><b>Tosba7 3la khir.</b><span>"Good night." Before he sleeps.</span><span lang="ar">تصبح على خير</span></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="setup">
+    <div class="head-block">
+      <p class="eyebrow">First run</p>
+      <h2 id="setup">Six steps, no app to install</h2>
+      <p class="lede">Setup happens on Masoud's face and in the phone's browser. He makes his own Wi-Fi, so it works on any phone and needs no app store.</p>
+    </div>
+    <ol class="steps">
+      <li><h3>Plug in</h3><p>USB-C, no battery. His eyes open and he says hello, then shows a QR code on his screen.</p><span class="say-it">"Aslema! Ena Masoud."</span></li>
+      <li><h3>Scan the QR</h3><p>The phone joins his setup Wi-Fi, <span class="tab">Masoud-4F2A</span>, and the setup page opens by itself.</p></li>
+      <li><h3>Pick a language</h3><p>Derja, Français, English or <span lang="ar">العربية</span>. He switches voice and face captions at once.</p></li>
+      <li><h3>Join home Wi-Fi</h3><p>Choose the network and type the password. He confirms with a happy face.</p></li>
+      <li><h3>Choose his mind</h3><p>Local, Cloud or Pet mode. The three options are below. You can change it later from the same page.</p></li>
+      <li><h3>Meet him</h3><p>Type your name, say "Ya Masoud!" to test the wake word, then shake him once.</p><span class="say-it">"Dawkha! Mrigel, nharek mas3oud, Sami."</span></li>
+    </ol>
+    <div class="grid minds">
+      <div class="mind rec">
+        <span class="tagm">Recommended · private</span>
+        <h3>Local mind</h3>
+        <p class="note"><span lang="ar">عقل محلّي</span> · Your computer is his brain.</p>
+        <ul>
+          <li>Runs on a PC or a Raspberry Pi 5 at home, using an open model through Ollama.</li>
+          <li>Your voice never leaves the house. Works with the internet off.</li>
+          <li>Free forever. Needs that computer switched on.</li>
+        </ul>
+      </div>
+      <div class="mind">
+        <span class="tagm">Smartest · easiest</span>
+        <h3>Cloud mind</h3>
+        <p class="note"><span lang="ar">عقل في السحاب</span> · A cloud AI answers.</p>
+        <ul>
+          <li>Best answers and nothing to install at home.</li>
+          <li>Bring your own API key for free, or subscribe to Masoud Cloud.</li>
+          <li>Needs internet. Your words go to the AI provider, and setup says so plainly.</li>
+        </ul>
+      </div>
+      <div class="mind">
+        <span class="tagm">For kids · offline</span>
+        <h3>Pet mode</h3>
+        <p class="note"><span lang="ar">بلا عقل</span> · No AI, all heart.</p>
+        <ul>
+          <li>No AI and no recording. He lives on his own: moods, blinks, naps.</li>
+          <li>Reacts to shakes, taps and loud sounds.</li>
+          <li>Right for young kids and classrooms. Works anywhere.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Choose by</th><th>Local mind</th><th>Cloud mind</th><th>Pet mode</th></tr></thead>
+        <tbody>
+          <tr><td>Where your voice goes</td><td>Stays at home</td><td>To the AI provider</td><td>Not recorded</td></tr>
+          <tr><td>Internet</td><td>Not needed</td><td>Needed</td><td>Not needed</td></tr>
+          <tr><td>Answers</td><td>Good; better on a stronger PC</td><td>Best</td><td>No conversation</td></tr>
+          <tr><td>Extra hardware</td><td>A PC or Raspberry Pi on</td><td>None</td><td>None</td></tr>
+          <tr><td>Running cost</td><td>0 TND</td><td>Own key, or a monthly plan</td><td>0 TND</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="inside">
+    <div class="head-block">
+      <p class="eyebrow">What's inside</p>
+      <h2 id="inside">A small body and a mind that can live anywhere</h2>
+      <p class="lede">The robot handles the face, ears, voice and senses. The heavy thinking happens wherever you chose to put his mind, connected over Wi-Fi.</p>
+    </div>
+    <div class="flow" aria-label="How a conversation flows">
+      <span>Mic hears "Ya Masoud"</span><i>→</i><span>Wake word</span><i>→</i><span>Speech to text</span><i>→</i>
+      <span class="mindbox">His mind: Local or Cloud</span><i>→</i><span>Reply and a mood tag</span><i>→</i><span>Voice on the speaker, mood on the face</span>
+    </div>
+    <p class="note">We already built this chain for the JARVIS assistant (wake word with openWakeWord, speech to text with faster-whisper, streaming replies, text to speech). Masoud's mind app reuses it and adds the mood tag that drives his face.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Part</th><th>What it does for Masoud</th><th class="num">Est. cost (USD)</th></tr></thead>
+        <tbody>
+          <tr><td>ESP32-S3 module, 8 MB PSRAM</td><td>His body's brain: Wi-Fi, face drawing, audio streaming</td><td class="num">5.00</td></tr>
+          <tr><td>2.0" IPS screen, 240×320</td><td>His face (the prototype uses a 1.8" 160×128)</td><td class="num">4.00</td></tr>
+          <tr><td>I2S MEMS microphone</td><td>Ears: hears "Ya Masoud" and your questions</td><td class="num">1.50</td></tr>
+          <tr><td>I2S amplifier + 28 mm 1 W speaker</td><td>His voice</td><td class="num">2.50</td></tr>
+          <tr><td>3-axis accelerometer</td><td>The shake sensor: shakes, taps, pick-ups, tilts</td><td class="num">1.00</td></tr>
+          <tr><td>Touch pad on the head</td><td>Pat him on the head (built into the ESP32)</td><td class="num">0.00</td></tr>
+          <tr><td>USB-C power, PCB and assembly</td><td>No battery in v1: simpler, safer, cheaper to certify</td><td class="num">4.00</td></tr>
+          <tr><td>Shell (3D-printed for batch 1) and box</td><td>His body and the yellow box he arrives in</td><td class="num">5.00</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total per unit</td><td>About 72 TND at 3.1 TND to the dollar</td><td class="num">23.00</td></tr></tfoot>
+      </table>
+    </div>
+    <p class="note">Estimates for a first batch of about 50 units, October 2026. Get real quotes from your suppliers before setting prices.</p>
+    <div class="status">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACAAgMAAADxDYqIAAAACVBMVEX4xBgA1PgIDBCEJvonAAAB3ElEQVR42u2XPW6kMBSAv3GmQFRTJL3LEbnEHCITTTknWb1yj0G5Yps5AqdAU6K0u0UqhJQVswWTgA0GZ4ZEkcJDlrDeZ78f42cDs8xyqSzMrvr19pqJqTHBhiNiAAzbnXgAjJ2jTNDyQ5y6tQmunaDgZ03ZuZMhpUvaYGArtQPUNhhca1qGlJfM2DNGrvTRFwy62lbClpbqT8rdxsP0KYW/Pj7+A04+4DNA+p6ofx+GwfQ87QsvfjMe4OADns5xMdkS9mTJNWNnefrBZzYrK53KVeSWTBrMDH4YuOz/JB5YbKcxvQFYTRnM6m3aEXDZPXD7wcUGbr3Sc7cd97HsavNPWutq+lOhc3JV1y5hbitLB1gOpPEy05X3nULcQZvg0QSPTrDyvUmxb3eKgY+icI6y07NrXrP5Fv5d5WYMSO5Tr82lvs4Rp5IwDmNImhbFKiGKOzU8rnRI+yEI2huxMa0ENMhrsxwzTgWJ6vuvlvM9OOgJJqest54U8mTtaQMsyeFRQMJMmoK364BCBSoBSMbzuK6rp4yCUpcVPQYqMuDR806RFFRoQGngp2Oto/OvaPjqiHYXUqlbnpvnhPmHJHXU+xykNEuwamb7AcdCKKSgIKOSHeznKjnLl5T/FE9upqJGwlgAAAAASUVORK5CYII=" alt="Masoud's boot screen: his winking head on yellow above the word masoud">
+      <div style="display:grid;gap:8px">
+        <h3 style="color:#F4F5F1">Where we are today</h3>
+        <p>The face already runs on an <b>Arduino Uno</b> and a 1.8" screen: boot logo, nine moods including the shake reaction, about 20 frames per second, and control over USB serial. Next is moving it to the ESP32-S3 and adding the mic, speaker and shake sensor.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="launch">
+    <div class="head-block">
+      <p class="eyebrow">Launch</p>
+      <h2 id="launch">From prototype to the first 50 sold</h2>
+    </div>
+    <div class="position">
+      For students, makers and families in Tunisia who want a robot friend on their desk, Masoud is the desk buddy with a face,
+      a Tunisian sense of humor and an AI mind you choose. Imported robots cost several times more and don't speak Derja.
+      <small>Imported desk robots like EMO and Eilik sell for roughly 140 to 350 USD before shipping and customs.</small>
+    </div>
+    <div class="grid segments">
+      <div class="card"><h3>Students and gamers</h3><p>A desk mate for long study nights and setups. Sold through short videos and word of mouth.</p></div>
+      <div class="card"><h3>Makers and schools</h3><p>Open firmware, Pet mode for classrooms, and a project to teach coding with. Reach them through FAB619 and fab labs.</p></div>
+      <div class="card"><h3>Gifts</h3><p>Birthdays, Eid, graduation. The yellow box is part of the gift. Push it before holidays.</p></div>
+    </div>
+    <div class="grid prices">
+      <div class="price hero-price"><span class="tagm" style="color:#FFC61A;font:600 12px/1 var(--body);letter-spacing:.1em;text-transform:uppercase">Main product</span><h3>Masoud</h3><div class="amt">279 <small>TND</small></div><p>Face, voice, mic, shake sensor, all three minds. Early-bird pre-order: 229 TND for the first 50.</p></div>
+      <div class="price"><span class="tagm" style="color:var(--accent-text);font:600 12px/1 var(--body);letter-spacing:.1em;text-transform:uppercase">For kids</span><h3>Masoud Pet</h3><div class="amt">179 <small>TND</small></div><p>Same face and shake sensor, no mic or speaker. Pet mode only, for kids and classrooms.</p></div>
+      <div class="price"><span class="tagm" style="color:var(--accent-text);font:600 12px/1 var(--body);letter-spacing:.1em;text-transform:uppercase">Optional plan</span><h3>Masoud Cloud</h3><div class="amt">12 <small>TND / month</small></div><p>For Cloud mind without your own API key. Local mind stays free.</p></div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Masoud at 279 TND, per unit</th><th class="num">TND</th></tr></thead>
+        <tbody>
+          <tr><td>Price without 19% VAT</td><td class="num">234</td></tr>
+          <tr><td>Parts (table above)</td><td class="num">−72</td></tr>
+          <tr><td>Assembly and testing</td><td class="num">−25</td></tr>
+          <tr><td>Box and delivery</td><td class="num">−15</td></tr>
+          <tr><td>Warranty and returns reserve</td><td class="num">−10</td></tr>
+          <tr><td>Marketing per unit</td><td class="num">−25</td></tr>
+        </tbody>
+        <tfoot><tr><td>Left per unit, before your own salary and tools</td><td class="num">87</td></tr></tfoot>
+      </table>
+    </div>
+    <p class="note">These prices are a starting point to test with real buyers, not market research. Adjust after the pre-orders.</p>
+    <div class="phases" aria-label="90-day plan">
+      <div class="phase"><span class="when">Weeks 1–3</span><h3>Prototype v2</h3><ul><li>Move the face to ESP32-S3 and the 2" screen</li><li>Add mic, speaker, shake sensor</li><li>Setup page and the three minds working</li></ul></div>
+      <div class="phase"><span class="when">Weeks 4–6</span><h3>10 beta units</h3><ul><li>Friends, FAB619 members, two teachers</li><li>Film every reaction in Derja</li><li>Fix what confuses people</li></ul></div>
+      <div class="phase"><span class="when">Weeks 7–9</span><h3>Go public</h3><ul><li>"Masoud reacts" reels on Instagram and TikTok</li><li>Open pre-orders with a deposit</li><li>File the trademark</li></ul></div>
+      <div class="phase"><span class="when">Weeks 10–13</span><h3>First 50</h3><ul><li>Build and test batch 1</li><li>Deliver with cash on delivery</li><li>Collect reviews, plan batch 2 of 200</li></ul></div>
+    </div>
+    <div class="head-block"><h3>Before you sell the first one</h3></div>
+    <div class="grid checklist">
+      <div class="check"><span class="box" aria-hidden="true"></span><p><b>Check the name is free</b> in the INNORPI trademark database and the WIPO Global Brand Database, then register "Masoud" and the logo at INNORPI in classes 9 (devices, software), 28 (toys) and 42 (cloud service).</p></div>
+      <div class="check"><span class="box" aria-hidden="true"></span><p><b>Grab the handles and domain</b> while they're free: Instagram, TikTok, Facebook, and a .tn or .com domain.</p></div>
+      <div class="check"><span class="box" aria-hidden="true"></span><p><b>Set up the company</b> (SUARL or SARL) and apply for the Startup Act label for its tax and funding benefits.</p></div>
+      <div class="check"><span class="box" aria-hidden="true"></span><p><b>Check the rules for a Wi-Fi device</b>: radio type approval in Tunisia, and CE marking before selling in Europe.</p></div>
+      <div class="check"><span class="box" aria-hidden="true"></span><p><b>Write a plain privacy notice</b> for Cloud mind and the setup page, and check your obligations with the INPDP before running Masoud Cloud.</p></div>
+      <div class="check"><span class="box" aria-hidden="true"></span><p><b>Ask a Tunisian business lawyer</b> to review the list above. This book is a plan, not legal advice.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Masoud · Kol nhar, mas3oud · Launch book v1</span>
+    <span>Prototype firmware and brand files: github.com/thefhiter/masoud (private)</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // Port of firmware/masoud_uno/emo_face.h: the same shapes, moods and timing as the robot.
+  var W = 160, H = 128;
+  var KEYS = ['cx', 'cy', 'w', 'h', 'r', 'lidIn', 'lidOut', 'lidFlat', 'happy', 'heart', 'dizzy', 'red', 'green', 'blue'];
+  var MOODS = [
+    { key: 'n', name: 'Labes' }, { key: 'h', name: 'Mrigel!' }, { key: 's', name: 'Mghboun' },
+    { key: 'a', name: 'Harissa!' }, { key: 'u', name: 'Ya mimti!' }, { key: 'z', name: 'Na3sen' },
+    { key: 'l', name: 'Mghrom' }, { key: '?', name: 'Chkoun?!' }, { key: 'd', name: 'Dawkha!' }
+  ];
+  function moodEye(m, side) {
+    var e = { cx: side === 0 ? 48 : 112, cy: 62, w: 44, h: 52, r: 12, lidIn: 0, lidOut: 0, lidFlat: 0,
+      happy: 0, heart: 0, dizzy: 0, red: 0, green: 215, blue: 255 };
+    var o = [null,
+      { h: 42, cy: 58, r: 19, happy: 1 },
+      { w: 42, h: 46, cy: 70, lidOut: 0.42, red: 40, green: 130, blue: 255 },
+      { w: 46, h: 46, lidIn: 0.48, red: 255, green: 45, blue: 25 },
+      { w: 52, h: 62, r: 18 },
+      { cy: 66, lidFlat: 0.62, red: 0, green: 140, blue: 175 },
+      { heart: 1, red: 255, green: 60, blue: 150 },
+      { lidFlat: side === 0 ? 0.52 : 0.18 },
+      { w: 36, h: 36, r: 18, dizzy: 1 }][m];
+    if (o) for (var k in o) e[k] = o[k];
+    return e;
+  }
+  function px(v) { return Math.floor(v + 0.5); }
+  function color565(r, g, b) {
+    r = Math.max(0, Math.min(255, r | 0)) & 0xF8; g = Math.max(0, Math.min(255, g | 0)) & 0xFC; b = Math.max(0, Math.min(255, b | 0)) & 0xF8;
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  function Face() {
+    this.eye = [moodEye(0, 0), moodEye(0, 1)]; this.eye[0].h = 3; this.eye[1].h = 3;
+    this.mood = 0; this.time = 0; this.lookX = this.lookY = this.lookTX = this.lookTY = 0;
+    this.blinkT = -1; this.blinkEye = -1; this.auto = true; this.manualUntil = 0; this.dizzyUntil = 0;
+    this.nextBlink = 6; this.nextLook = 6; this.nextMood = 12; this.moodUntil = 0; this.zPhase = 0; this.rng = 0x2545F491;
+  }
+  Face.prototype.rnd = function () { var x = this.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.rng = x >>> 0; return this.rng; };
+  Face.prototype.rndf = function (a, b) { return a + (b - a) * (this.rnd() % 1000) / 1000; };
+  Face.prototype.setMood = function (m) { this.mood = m; if (m === 5) this.zPhase = 0; };
+  Face.prototype.look = function (x, y) { this.lookTX = x; this.lookTY = y; };
+  Face.prototype.blink = function () { if (this.blinkT < 0) { this.blinkT = 0; this.blinkEye = -1; } };
+  Face.prototype.shake = function () { this.setMood(8); this.dizzyUntil = this.time + 3; };
+  Face.prototype.command = function (c) {
+    if (this.time < 5) this.time = 5;
+    var i = 'nhsauzl?d'.indexOf(c);
+    if (i < 0) return;
+    if (i === 8) this.shake(); else this.setMood(i);
+    if (i === 7) this.look(1, 0); else if (i === 2 || i === 5) this.look(0, 0.5); else this.look(0, 0);
+    this.manualUntil = this.time + 15;
+  };
+  Face.prototype.intro = function () {
+    var t = this.time;
+    if (t > 5) return;
+    if (t > 1.3 && t < 1.9) this.look(-0.9, 0); else if (t > 1.9 && t < 2.5) this.look(0.9, 0); else if (t > 2.5 && t < 2.7) this.look(0, 0);
+    if (t > 2.8 && t < 3.0) this.setMood(1);
+    if (t > 4.6) this.setMood(0);
+  };
+  Face.prototype.behave = function () {
+    var t = this.time;
+    if (t > this.nextBlink) { this.blink(); this.nextBlink = t + (this.rnd() % 5 === 0 ? 0.35 : this.rndf(1.8, 5)); }
+    if (t < this.manualUntil) return;
+    if (t > this.nextLook && this.mood !== 5) {
+      var spots = [[0, 0], [0, 0], [-1, 0], [1, 0], [-0.7, -0.8], [0.7, -0.8], [-0.6, 0.7], [0.6, 0.7], [0, -1]];
+      var s = spots[this.rnd() % spots.length]; this.look(s[0], s[1]); this.nextLook = t + this.rndf(1, 3.5);
+    }
+    if (this.mood !== 0 && this.mood !== 8 && t > this.moodUntil) { this.setMood(0); this.nextMood = t + this.rndf(6, 12); }
+    else if (this.mood === 0 && t > this.nextMood) {
+      this.setMood(1 + this.rnd() % 7);
+      if (this.mood === 7) this.look(this.rnd() % 2 ? 1 : -1, 0);
+      if (this.mood === 2 || this.mood === 5) this.look(0, 0.5);
+      this.moodUntil = t + this.rndf(3.5, 6);
+    }
+  };
+  Face.prototype.update = function (dt) {
+    this.time += dt;
+    this.intro();
+    if (this.auto && this.time > 5) this.behave();
+    if (this.mood === 8 && this.time > this.dizzyUntil) this.setMood(0);
+    if (this.blinkT >= 0) { this.blinkT += dt / (this.mood === 5 ? 0.5 : 0.22); if (this.blinkT >= 1) this.blinkT = -1; }
+    var k = 1 - Math.exp(-dt * 11), kl = 1 - Math.exp(-dt * 9);
+    this.lookX += (this.lookTX - this.lookX) * kl; this.lookY += (this.lookTY - this.lookY) * kl;
+    for (var s = 0; s < 2; s++) {
+      var t = moodEye(this.mood, s), e = this.eye[s];
+      for (var i = 0; i < KEYS.length; i++) e[KEYS[i]] += (t[KEYS[i]] - e[KEYS[i]]) * k;
+    }
+    if (this.mood === 5) this.zPhase += dt * 0.45;
+    onMood(this.mood);
+  };
+  Face.prototype.eyeShape = function (s) {
+    var e = this.eye[s], grow = 1 + 0.1 * this.lookX * (s === 1 ? 1 : -1);
+    var w = e.w * grow, h = e.h * grow, cx = e.cx + this.lookX * 18, cy = e.cy + this.lookY * 10;
+    if (this.blinkT >= 0 && (this.blinkEye < 0 || this.blinkEye === s)) h *= 1 - 0.93 * Math.sin(Math.PI * this.blinkT);
+    if (e.happy > 0.01) cy += Math.sin(this.time * 12.57) * 1.5 * e.happy;
+    if (this.mood === 3) cx += Math.sin(this.time * 50) * 0.8;
+    if (e.dizzy > 0.01) { var a = this.time * 9 + (s === 0 ? 0 : Math.PI); cx += Math.cos(a) * 8 * e.dizzy; cy += Math.sin(a) * 8 * e.dizzy; }
+    var sh = { color: color565(e.red, e.green, e.blue), cx: cx, cy: cy };
+    if (e.heart > 0.5) { sh.kind = 'heart'; sh.w = w * 1.18 * e.heart * (1 + 0.08 * Math.sin(this.time * 10)); return sh; }
+    var morph = e.heart * 2; w *= 1 - morph; h *= 1 - morph;
+    sh.kind = 'eye'; sh.w = w; sh.h = h; sh.r = Math.min(e.r * grow, Math.min(w, h) * 0.5);
+    sh.top = cy - h / 2; sh.bottom = cy + h / 2; sh.xl = cx - w / 2; sh.xr = cx + w / 2;
+    var inner = (e.lidIn + e.lidFlat) * h, outer = (e.lidOut + e.lidFlat) * h;
+    sh.dL = s === 0 ? outer : inner; sh.dR = s === 0 ? inner : outer;
+    sh.ery = h * 0.72; sh.erx = w * 0.30; sh.ecy = sh.bottom + (1 - e.happy) * sh.ery;
+    sh.empty = w < 1 || h < 1;
+    return sh;
+  };
+  Face.prototype.zShape = function (i) {
+    var p = ((this.zPhase + i * 0.5) % 1 + 1) % 1, size = 7 + p * 9, a = Math.sin(Math.PI * p), e = this.eye[1];
+    return { kind: 'z', w: size, cx: 126 + p * 16 + i * 4, cy: 40 - p * 32, color: color565(e.red * a, e.green * a, e.blue * a) };
+  };
+  function spans(sh, y, out) {
+    var yc = y + 0.5;
+    function add(a, b) { var x0 = px(a), x1 = px(b); if (x1 > x0) out.push([x0, x1, sh.color]); }
+    if (sh.kind === 'z') {
+      var s = sh.w, t = Math.max(2, s / 5), ry = yc - sh.cy;
+      if (ry < 0 || ry >= s) return;
+      if (ry < t || ry >= s - t) return add(sh.cx, sh.cx + s);
+      var xd = sh.cx + (s - t) * (1 - (ry - t) / (s - 2 * t)); return add(xd, xd + t);
+    }
+    if (sh.kind === 'heart') {
+      var hs = sh.w, iv = [], lr = hs * 0.27, ly = sh.cy - hs * 0.13;
+      for (var side = -1; side <= 1; side += 2) {
+        var d = yc - ly;
+        if (Math.abs(d) < lr) { var hw = Math.sqrt(lr * lr - d * d), lx = sh.cx + side * hs * 0.25; iv.push([lx - hw, lx + hw]); }
+      }
+      var ty0 = sh.cy - hs * 0.10, ty1 = sh.cy + hs * 0.45;
+      if (yc >= ty0 && yc < ty1) { var hw2 = hs * 0.5 * (ty1 - yc) / (ty1 - ty0); iv.push([sh.cx - hw2, sh.cx + hw2]); }
+      iv.sort(function (p, q) { return p[0] - q[0]; });
+      var a0 = 0, b0 = -1;
+      for (var j = 0; j < iv.length; j++) {
+        if (b0 < a0) { a0 = iv[j][0]; b0 = iv[j][1]; }
+        else if (iv[j][0] <= b0) { if (iv[j][1] > b0) b0 = iv[j][1]; }
+        else { add(a0, b0); a0 = iv[j][0]; b0 = iv[j][1]; }
+      }
+      if (b0 >= a0) add(a0, b0);
+      return;
+    }
+    if (sh.empty || yc < sh.top || yc >= sh.bottom) return;
+    var dd = 0, inset = 0;
+    if (yc < sh.top + sh.r) dd = sh.top + sh.r - yc; else if (yc > sh.bottom - sh.r) dd = yc - (sh.bottom - sh.r);
+    if (dd > 0) inset = sh.r - Math.sqrt(Math.max(0, sh.r * sh.r - dd * dd));
+    var x0 = sh.xl + inset, x1 = sh.xr - inset, dy = yc - sh.top;
+    if (Math.abs(sh.dR - sh.dL) < 0.01) { if (dy < sh.dL) return; }
+    else { var xs = sh.xl + (dy - sh.dL) * (sh.xr - sh.xl) / (sh.dR - sh.dL); if (sh.dR > sh.dL) x1 = Math.min(x1, xs); else x0 = Math.max(x0, xs); }
+    if (x1 <= x0) return;
+    var tt = (yc - sh.ecy) / sh.ery;
+    if (sh.ery > 0.01 && tt > -1 && tt < 1) { var hw3 = sh.erx * Math.sqrt(1 - tt * tt); add(x0, Math.min(x1, sh.cx - hw3)); add(Math.max(x0, sh.cx + hw3), x1); return; }
+    add(x0, x1);
+  }
+
+  var canvas = document.getElementById('face'), ctx = canvas.getContext('2d');
+  var face = new Face(), buttons = [], shown = 0;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function draw() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    var shapes = [face.eyeShape(0), face.eyeShape(1)];
+    if (face.mood === 5) shapes.push(face.zShape(0), face.zShape(1));
+    for (var y = 0; y < H; y++) {
+      var out = [];
+      for (var i = 0; i < shapes.length; i++) spans(shapes[i], y, out);
+      for (var j = 0; j < out.length; j++) { ctx.fillStyle = out[j][2]; ctx.fillRect(out[j][0], y, out[j][1] - out[j][0], 1); }
+    }
+  }
+  function onMood(i) {
+    if (i === shown || !buttons.length) return;
+    shown = i;
+    buttons.forEach(function (b, j) { b.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+  }
+  var group = document.getElementById('moods');
+  MOODS.forEach(function (m, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mood'; b.id = 'mood-' + i; b.textContent = m.name;
+    b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    b.addEventListener('click', function () { press(m.key); });
+    group.appendChild(b); buttons.push(b);
+  });
+  var bot = document.getElementById('bot');
+  function press(key) {
+    face.command(key);
+    if (key === 'd') { bot.classList.remove('shaking'); void bot.offsetWidth; bot.classList.add('shaking'); }
+    if (reduce) { face.update(3); draw(); }
+  }
+  bot.addEventListener('click', function () { press('d'); });
+  bot.addEventListener('animationend', function () { bot.classList.remove('shaking'); });
+
+  if (reduce) { face.auto = false; face.time = 5; face.update(5); draw(); }
+  else {
+    var last = performance.now();
+    (function frame(now) { var dt = Math.min(0.1, (now - last) / 1000); last = now; face.update(dt); draw(); requestAnimationFrame(frame); })(last);
+  }
+
+  var root = document.documentElement;
+  document.getElementById('theme').addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme') === 'dark' ||
+      (!root.hasAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+  });
+})();
+</script>

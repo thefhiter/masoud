@@ -1,0 +1,9 @@
+build/
+*.hex
+*.elf
+*.exe
+*.pdb
+*.ppm
+*.raw
+__pycache__/
+*.log
