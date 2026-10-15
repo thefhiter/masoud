@@ -8,7 +8,7 @@ in the cloud, or none at all. He speaks Derja first. *Kol nhar, mas3oud*: every 
 
 | Folder | What's in it |
 |---|---|
-| [`brand/`](brand/) | Logo files as plain SVG paths, and [`launch-book.html`](brand/launch-book.html), the brand and launch book (open it in a browser): name, logo rules, colors, type, Derja voice, first-run setup, parts, pricing, 90-day plan. |
+| [`brand/`](brand/) | Logo files as plain SVG paths, and [`launch-book.html`](brand/launch-book.html), the cinematic brand and launch book (open it in a browser): a live 3D Masoud whose eyes follow your pointer, name, logo rules, colors, type, Derja voice, first-run setup, parts, pricing, 90-day plan. |
 | [`firmware/masoud_uno/`](firmware/masoud_uno/) | The working prototype: Masoud's face on an Arduino Uno + Waveshare 1.8" ST7735S screen. |
 | [`tools/`](tools/) | `emo_preview.cpp` renders the face on a PC with the same code, `make_splash.py` builds the boot wordmark, `make_logos.py` builds the logo SVGs. |
 | [`docs/`](docs/) | Images used here. |
