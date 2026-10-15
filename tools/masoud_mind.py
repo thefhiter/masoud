@@ -125,9 +125,27 @@ class ClaudeCLI:
     def __init__(self, model):
         self.model, self.proc, self.lines = model, None, None
         self.bin = shutil.which("claude")
+        self.signed = (0.0, True)        # (checked at, signed in): assume yes until checked
 
     def available(self):
         return bool(self.bin)
+
+    def signed_in(self):
+        """Is the CLI signed in? `claude auth status` takes ~2 s, so it runs in the
+        background every 2 minutes and this returns the last answer."""
+        when, ok = self.signed
+        if self.bin and time.time() - when > 120:
+            self.signed = (time.time(), ok)
+            threading.Thread(target=self._check_sign_in, daemon=True).start()
+        return ok
+
+    def _check_sign_in(self):
+        try:
+            out = subprocess.run([self.bin, "auth", "status"], capture_output=True, text=True, timeout=30,
+                                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).stdout
+            self.signed = (time.time(), bool(json.loads(out[out.index("{"):]).get("loggedIn")))
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pass
 
     def start(self):
         if self.proc and self.proc.poll() is None:
@@ -191,7 +209,7 @@ class Mind:
         self.forced = mind
         self.history = []                # [{"role": "user"|"assistant", "content": ...}], API minds
         self.lock = threading.Lock()
-        self.active, self.last_seconds, self.down = None, 0.0, {}
+        self.active, self.last_seconds, self.down, self.failed = None, 0.0, {}, []
         self.cli = None
         self.reload()
 
@@ -223,14 +241,18 @@ class Mind:
     def available(self):
         return {"claude-api": bool(self.key("anthropic_key", "ANTHROPIC_API_KEY")),
                 "groq": bool(self.key("groq_key", "GROQ_API_KEY")),
-                "claude": self.cli.available(),
+                "claude": self.cli.available() and self.cli.signed_in(),
                 "ollama": self.ollama_up(), "pet": True}
 
     def order(self):
-        if self.choice != "auto":
-            return [self.choice]
+        """Minds to try, in turn. The chosen one goes first and the others back it
+        up, so he still answers when it fails; only Pet (no AI, on purpose) is alone."""
+        if self.choice == "pet":
+            return ["pet"]
         have, now = self.available(), time.time()
         ok = [m for m in MINDS if have.get(m)]
+        if self.choice in ok:              # chosen and usable now (a signed-out CLI is not)
+            ok = [self.choice] + [m for m in ok if m != self.choice]
         return [m for m in ok if self.down.get(m, 0) < now] or ok      # all failing lately: try them all again
 
     def describe(self):
@@ -242,6 +264,7 @@ class Mind:
                 "available": self.available(), "labels": LABELS,
                 "groq_model": self.cfg.get("groq_model", GROQ_MODELS[0]),
                 "has_groq_key": bool(self.key("groq_key", "GROQ_API_KEY")),
+                "claude_installed": self.cli.available(), "claude_signed_in": self.cli.signed_in(),
                 "has_anthropic_key": bool(self.key("anthropic_key", "ANTHROPIC_API_KEY"))}
 
     def warm(self):
@@ -257,7 +280,7 @@ class Mind:
         """-> (mood, derja_text, mind_used). Falls through the minds on errors."""
         with self.lock:
             note = time_note()
-            errors = []
+            errors, self.failed = [], []
             for m in self.order():
                 try:
                     t0 = time.time()
@@ -272,6 +295,7 @@ class Mind:
                     return mood, said, m
                 except (MindError, KeyError, IndexError, TypeError, AttributeError) as e:   # odd replies too
                     errors.append(f"{m}: {e!r}" if not isinstance(e, MindError) else f"{m}: {e}")
+                    self.failed.append(m)
                     self.down[m] = time.time() + RETRY_AFTER
             raise MindError("; ".join(errors) or "no mind available")
 

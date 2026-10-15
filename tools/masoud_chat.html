@@ -292,7 +292,7 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
 <dialog id="mind" aria-labelledby="mind-title">
   <form method="dialog" id="mind-form">
     <h2 id="mind-title">His mind</h2>
-    <p class="lead">Who thinks for Masoud. Auto picks the best one that works on this PC and moves to the next if it fails.</p>
+    <p class="lead">Who thinks for Masoud. If the one you pick fails, the next one that works answers, so he never goes quiet. Pet is the only one with no backup: no AI, on purpose.</p>
     <fieldset class="minds" id="minds"><legend>Choose</legend></fieldset>
     <div class="keys">
       <div class="field">
@@ -514,7 +514,7 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
   // ---------- the page's Masoud mirrors the real one ----------
   var DESC = { 'claude-api': 'Claude with your own API key. About a second per answer.',
     'groq': 'Groq, free with a key. Fastest, and good Derja.',
-    'claude': 'The Claude Code CLI on this PC, no key needed, but it must be signed in (run claude once). A few seconds per answer.',
+    'claude': 'The Claude Code CLI on this PC, no key needed. Sign it in once with: claude auth login. A few seconds per answer.',
     'ollama': 'A model running on this PC with Ollama. Private and free.',
     'pet': 'No AI: a few cute canned answers. Good for kids.' };
   var face = new Face();
@@ -636,6 +636,7 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
     if (ev.who === 'system') { var s = document.createElement('div'); s.className = 'sys'; s.textContent = ev.text; add(s); return; }
     var i = MOOD_KEYS.indexOf(ev.mood), color = i >= 0 ? GLOW[i] : null, words = [], meta = [];
     if (ev.kind === 'reply') words.push((ev.mind || '') + (ev.seconds ? ' · ' + ev.seconds + ' s' : ''));
+    if (ev.failed && ev.failed.length) words.push(ev.failed.join(', ') + ' failed, so ' + (ev.mind || 'another mind') + ' answered');
     if (ev.kind === 'said') words.push('said your words');
     if (ev.kind === 'auto') words.push('on his own');
     if (ev.kind === 'error') words.push('his mind could not answer' + (ev.error ? ': ' + ev.error.slice(0, 120) : ''));
@@ -718,7 +719,7 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
   function tagFor(k, info) {
     var a = info.available[k];
     if (k === 'groq' || k === 'claude-api') return a ? ['ready', 'key set'] : ['', 'needs a key'];
-    if (k === 'claude') return a ? ['ready', 'installed'] : ['', 'not installed'];
+    if (k === 'claude') return a ? ['ready', 'signed in'] : info.claude_installed ? ['', 'signed out'] : ['', 'not installed'];
     if (k === 'ollama') return a ? ['ready', 'running'] : ['', 'not running'];
     return ['ready', 'always'];
   }

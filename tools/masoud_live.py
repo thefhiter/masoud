@@ -180,25 +180,28 @@ class Hub:
             if not text:
                 return None
         self.add("you", text, mode, cid=cid)
-        mood, used, seconds = None, None, 0.0
+        mood, used, seconds, extra = None, None, 0.0, {}
         if mode == "say":
-            said = text
+            said, kind = text, "said"
         else:
             self.thinking = True
             self.todo.put(("face", "8"))              # eyes up: he is thinking
             try:
                 mood, said, used = self.mind.reply(text)
-                seconds = self.mind.last_seconds
-            except mm.MindError as e:
-                self.todo.put(("face", "5"))
+                seconds, kind = self.mind.last_seconds, "reply"
+            except mm.MindError as e:                 # every mind failed: he says so, never stays silent
                 say_print(f"  (his mind failed: {e})")
-                return self.add("masoud", "ما نجمتش نفكر توا... عاود بعد شوية.", "error", error=str(e), cid=cid)
+                mood, said, kind, extra["error"] = "s", "ما نجمتش نفكر توا... عاود بعد شوية.", "error", str(e)
             finally:
                 self.thinking = False
             self.mood = mood
+            failed = [mm.LABELS.get(m, m) for m in self.mind.failed if m != used]
+            if failed:                                # the chosen mind failed and a backup answered
+                extra["failed"] = failed
+                say_print(f"  ({', '.join(failed)} failed; {mm.LABELS.get(used, 'no mind')} answered)")
         plugged = bool(self.port)
-        ev = self.add("masoud", said, "reply" if mode == "chat" else "said", mood=mood,
-                      mind=mm.LABELS.get(used), seconds=round(seconds, 1), cid=cid, voiceless=not plugged)
+        ev = self.add("masoud", said, kind, mood=mood, mind=mm.LABELS.get(used),
+                      seconds=round(seconds, 1), cid=cid, voiceless=not plugged, **extra)
         if plugged:
             self.voice.put((mood, said))
         return ev

@@ -100,13 +100,13 @@ in a terminal chats through it too.
 
 The mind is `tools/masoud_mind.py`, the launch book's "choose his mind" on a PC. Pick it on the
 page (the *Mind* button) or in `%LOCALAPPDATA%\masoud\mind.json`. In *Auto*, he uses the first one
-that works and moves to the next one if it fails:
+that works. Any other choice goes first, and the rest back it up, so he never goes quiet; only Pet has no backup (no AI, on purpose):
 
 | Mind | Needs | Speed |
 |---|---|---|
 | Claude API | your Anthropic key | about 1 s |
 | Groq (`openai/gpt-oss-120b`) | a free key from console.groq.com | under 1 s; if Groq retires a model he moves to the next |
-| Claude CLI | the `claude` CLI, signed in | a few s |
+| Claude CLI | the `claude` CLI, signed in once with `claude auth login` | a few s |
 | Ollama | Ollama running on this PC | depends on the PC |
 | Pet | nothing | canned answers |
 
