@@ -103,7 +103,18 @@ struct Panel {
 // Ask the panel for its power mode (RDDPM, 0Ah); it answers on its data
 // line, so SPI is paused and the read is bit-banged on port B
 // (D13=SCK, D11=SDA, D10=CS, D9=DC). 0x9C = awake with the display on.
+uint8_t panelPowerModeRaw();
+
 uint8_t panelPowerMode() {
+  // ~40 us with interrupts off: the 8 kHz audio interrupt must not land inside the read
+  uint8_t sreg = SREG;
+  cli();
+  uint8_t v = panelPowerModeRaw();
+  SREG = sreg;
+  return v;
+}
+
+uint8_t panelPowerModeRaw() {
   const uint8_t sck = _BV(PB5), sda = _BV(PB3), cs = _BV(PB2), dc = _BV(PB1);
   uint8_t spcr = SPCR;
   SPCR = 0;
