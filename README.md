@@ -114,7 +114,25 @@ Keys stay on this PC and never go back to the page. The server only listens on 1
 refuses requests from other websites. From your message, his text shows in about 1 s and his
 voice starts after 3 to 5 s: the Tunisian voice takes about 2 s to render.
 
+**His Derja** (`tools/masoud_derja.py`): every mind gets a short Derja guide (Tunisian words for
+what / why / now / a lot..., ما...ش negation, باش future, no MSA and no Egyptian, Levantine, Gulf or
+Moroccan words, a warm cheeky-cousin tone, family-friendly), plus a few original example exchanges.
+Each answer is then checked: MSA words with a one-to-one Derja word are swapped (الآن → توّا,
+المكتب → البيرو, نهدر → نحكي), and if MSA grammar is left (سوف, لا أعرف...) the mind rewrites the
+answer in Derja. `--eval` sends 24 messages (English, French, Arabizi, Derja and MSA) and scores them:
+
+| | Before | Now |
+|---|---|---|
+| Answers with MSA or another dialect | 29% | 0% |
+| Coffee or couscous brought up off-topic | 50% | 4% |
+| يا حسرة ("what a pity") said to good news | 2 | 0 |
+| Average answer time (Groq) | 1.4 s | 1.1 s |
+
+The prompt is kept short (about 900 tokens) because Groq's free tier allows 8,000 tokens a minute;
+when the big model's minute is used up he answers with the smaller one.
+
 ```sh
+python tools/masoud_derja.py --eval --mind groq       # score his Derja (about 4 minutes, paced)
 python tools/masoud_mind.py "Aslema, chnahwelek?"     # test his mind alone, no robot
 python tools/masoud_mind.py --chat --mind groq        # a console chat with one mind
 ```

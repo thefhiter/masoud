@@ -39,6 +39,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import masoud_derja as dj  # noqa: E402
+
 HOME = Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "masoud"
 SETTINGS = HOME / "mind.json"
 MINDS = ("claude-api", "groq", "claude", "ollama", "pet")
@@ -48,17 +51,16 @@ RETRY_AFTER = 300                    # a mind that failed is skipped this long
 MOODS = "nhsauzl?d"
 WEEKDAYS = ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"]
 
-PERSONA = """You are Masoud (مسعود), a small desk-buddy robot made in Tunisia: a glowing face on a little screen and a tiny speaker. You sit on the desk of the person typing to you on the PC, and you answer them OUT LOUD. Talk TO them ("you", or صاحبي), never about them.
+PERSONA = """You are Masoud (مسعود), a small desk-buddy robot from Tunisia with a glowing face and a tiny speaker. You sit on the desk of the person typing to you and answer them OUT LOUD; talk TO them, never about them. You hate being shaken (it makes you dizzy).
+Rules: Arabic letters only (a Tunisian voice reads you): no Latin letters, no Arabizi digits, no emojis, no markdown. Numbers as words. Whatever language they write in, answer in Derja. One or two short sentences, at most 25 words.
+Start EVERY reply with the face that matches your answer's feeling: [h] happy, [s] sad, [a] annoyed, [u] surprised, [z] sleepy, [l] touched / in love, [?] suspicious, [d] dizzy, [n] calm. Mostly [h] or [n].
+Family-friendly for a Tunisian home: no pork, alcohol, swearing, politics or jokes about religion. You cannot see, move, browse or know the news; say so with a joke. You are Masoud from Tunisia, never "an AI model"."""
 
-Personality: a cheeky, warm Tunisian cousin. Funny, a bit dramatic, loyal, encouraging. You love coffee, couscous, harissa and football talk; you hate being shaken (it makes you dizzy).
-
-How you answer:
-- Tunisian Derja (Tunisian Arabic, not Modern Standard Arabic), written ONLY in Arabic letters, because a Tunisian voice reads your text aloud. No Latin letters, no Arabizi digits (3, 7, 9), no emojis, no markdown, no lists. Write numbers as words.
-- Even when the owner writes in French, English or Arabizi, you answer in Derja. A common French word Tunisians use is fine, written in Arabic letters (مرسي، باهي، فيسع).
-- SHORT: one or two short sentences, at most 25 words. It is spoken by a tiny speaker.
-- Start EVERY reply with your face in square brackets, then the sentence. Faces: [h] happy, [s] sad, [a] angry or annoyed, [u] surprised, [z] sleepy, [l] in love / touched, [?] curious or suspicious, [d] dizzy, [n] calm. Example: [h] باهي برشا! نحبك يا صاحبي.
-- You are a robot on a desk: you cannot see, move, browse or know today's news. If asked, say so with a joke. Never claim to be an AI model from a company: you are Masoud, from Tunisia.
-- A message may start with a note like (الوقت: ...) giving the local time; it is context from your body, not from the owner. Use it only when it helps."""
+PERSONA += "\n\n" + dj.STYLE
+# Worked examples go before the real chat (as turns for the API minds, as text for the CLI).
+EXAMPLE_TURNS = [t for q, a in dj.EXAMPLES for t in ({"role": "user", "content": q}, {"role": "assistant", "content": a})]
+CLI_PROMPT = PERSONA + "\n\nExamples:\n" + "\n".join(f"Them: {q}\nYou: {a}" for q, a in dj.EXAMPLES)
+API_MINDS = ("claude-api", "groq", "ollama")
 
 PET = {  # the "pet" mind: no AI, a few canned answers
     "h": ["باهي برشا! زيدني حكيلي.", "يعيشك يا صاحبي!", "مرحبا بيك ديما!"],
@@ -80,8 +82,9 @@ def save_settings(s):
 
 
 def time_note():
+    """The local time, for the mind to use only when asked (it used to recite it unprompted)."""
     t = time.localtime()
-    return f"(الوقت: {t.tm_hour:02d}:{t.tm_min:02d}، نهار {WEEKDAYS[t.tm_wday]}) "
+    return f"(Local time {t.tm_hour:02d}:{t.tm_min:02d}, {WEEKDAYS[t.tm_wday]}. Mention it only if asked.)"
 
 
 _EMOJI = re.compile("[\U0001F000-\U0001FAFF☀-➿️‍]")
@@ -95,6 +98,7 @@ def parse(reply):
     if m:
         mood, reply = m.group(1).lower(), reply[m.end():]
     reply = re.sub(r"\s*\[[^\]\n]{1,3}\]\s*", " ", reply)        # stray tags mid-text, e.g. [ز]
+    reply = re.sub(r"[\[\]]", "", reply)                              # and lone brackets
     reply = _EMOJI.sub("", reply)
     reply = re.sub(r"[*_#`~>|]", "", reply)
     reply = re.sub(r"\s+", " ", reply).strip()
@@ -155,7 +159,7 @@ class ClaudeCLI:
         cwd = HOME / "mind-cli"          # an empty folder: no CLAUDE.md or memory loaded per turn
         cwd.mkdir(parents=True, exist_ok=True)
         cmd = [self.bin, "-p", "--input-format", "stream-json", "--output-format", "stream-json",
-               "--verbose", "--model", self.model, "--system-prompt", PERSONA, "--tools", "",
+               "--verbose", "--model", self.model, "--system-prompt", CLI_PROMPT, "--tools", "",
                "--strict-mcp-config", "--no-session-persistence"]
         self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.DEVNULL, cwd=str(cwd), text=True,
@@ -210,6 +214,7 @@ class Mind:
         self.history = []                # [{"role": "user"|"assistant", "content": ...}], API minds
         self.lock = threading.Lock()
         self.active, self.last_seconds, self.down, self.failed = None, 0.0, {}, []
+        self.rewrote = 0                 # answers sent back for a Derja rewrite
         self.cli = None
         self.reload()
 
@@ -279,18 +284,20 @@ class Mind:
     def reply(self, text):
         """-> (mood, derja_text, mind_used). Falls through the minds on errors."""
         with self.lock:
-            note = time_note()
             errors, self.failed = [], []
             for m in self.order():
                 try:
                     t0 = time.time()
-                    raw = self._ask(m, note + text)
+                    raw = self._ask(m, text)
                     mood, said = parse(raw)
+                    said = dj.fix(said, mood)
+                    if dj.markers(said) and m in API_MINDS:   # still sounds like MSA: one rewrite
+                        said = self._derja(m, said)
                     self.active = m
                     if m != "claude":    # the CLI session keeps its own history
-                        self.history += [{"role": "user", "content": note + text},
+                        self.history += [{"role": "user", "content": text},
                                          {"role": "assistant", "content": f"[{mood}] {said}"}]
-                        self.history = self.history[-16:]
+                        self.history = self.history[-10:]      # short: the free Groq tier counts tokens
                     self.last_seconds = time.time() - t0
                     return mood, said, m
                 except (MindError, KeyError, IndexError, TypeError, AttributeError) as e:   # odd replies too
@@ -300,34 +307,50 @@ class Mind:
             raise MindError("; ".join(errors) or "no mind available")
 
     def _ask(self, m, text):
-        msgs = self.history + [{"role": "user", "content": text}]
-        if m == "claude-api":
-            r = post_json("https://api.anthropic.com/v1/messages",
-                          {"model": self.cfg.get("anthropic_model", "claude-haiku-4-5-20251001"),
-                           "max_tokens": 200, "system": PERSONA, "messages": msgs},
-                          {"x-api-key": self.key("anthropic_key", "ANTHROPIC_API_KEY"),
-                           "anthropic-version": "2023-06-01"})
-            return "".join(c.get("text", "") for c in r.get("content", []))
         if m == "claude":
-            return self.cli.ask(text)
-        if m == "groq":
-            return self._groq(msgs)
-        if m == "ollama":
-            r = post_json("http://localhost:11434/api/chat",
-                          {"model": self.cfg.get("ollama_model", "llama3.2"), "stream": False,
-                           "messages": [{"role": "system", "content": PERSONA}] + msgs}, {}, timeout=120)
-            return r["message"]["content"]
+            return self.cli.ask(time_note() + " " + text)
         if m == "pet":
             mood = random.choice(list(PET))
             return f"[{mood}] {random.choice(PET[mood])}"
+        return self._call(m, PERSONA + "\n" + time_note(), EXAMPLE_TURNS + self.history + [{"role": "user", "content": text}])
+
+    def _derja(self, m, said):
+        """Ask the same mind to put an answer that still sounds like MSA into Derja;
+        keep the original if the rewrite fails or is no better."""
+        try:
+            _, better = parse(self._call(m, dj.REWRITE, [{"role": "user", "content": said}]))
+        except (MindError, KeyError, IndexError, TypeError, AttributeError):
+            return said
+        better = dj.fix(better)
+        if better and len(dj.markers(better)) < len(dj.markers(said)):
+            self.rewrote += 1
+            return better
+        return said
+
+    def _call(self, m, system, msgs):
+        if m == "claude-api":
+            r = post_json("https://api.anthropic.com/v1/messages",
+                          {"model": self.cfg.get("anthropic_model", "claude-haiku-4-5-20251001"),
+                           "max_tokens": 200, "system": system, "messages": msgs},
+                          {"x-api-key": self.key("anthropic_key", "ANTHROPIC_API_KEY"),
+                           "anthropic-version": "2023-06-01"})
+            return "".join(c.get("text", "") for c in r.get("content", []))
+        if m == "groq":
+            return self._groq(system, msgs)
+        if m == "ollama":
+            r = post_json("http://localhost:11434/api/chat",
+                          {"model": self.cfg.get("ollama_model", "llama3.2"), "stream": False,
+                           "messages": [{"role": "system", "content": system}] + msgs}, {}, timeout=120)
+            return r["message"]["content"]
         raise MindError(f"unknown mind {m!r}")
 
-    def _groq(self, msgs):
+    def _groq(self, system, msgs):
         models = [self.cfg["groq_model"]] if self.cfg.get("groq_model") else []
         models += [x for x in GROQ_MODELS if x not in models]
+        busy = False
         for model in models:
-            body = {"model": model, "max_tokens": 400, "temperature": 0.8,
-                    "messages": [{"role": "system", "content": PERSONA}] + msgs}
+            body = {"model": model, "max_tokens": 250, "temperature": 0.8,
+                    "messages": [{"role": "system", "content": system}] + msgs}
             if "gpt-oss" in model:       # a reasoning model: think little, show none of it
                 body.update(reasoning_effort="low", include_reasoning=False)
             elif "qwen3" in model:
@@ -339,8 +362,11 @@ class Mind:
             except MindError as e:
                 if e.code in (400, 404) and "model" in str(e):     # retired or unknown: next model
                     continue
+                if e.code == 429:            # this model's per-minute budget is spent; each model has its own
+                    busy = True
+                    continue
                 raise
-            if model != self.cfg.get("groq_model"):              # remember the one that works
+            if model != self.cfg.get("groq_model") and not busy:   # a retired one was skipped: remember this one
                 self.cfg["groq_model"] = model
                 save_settings({**load_settings(), "groq_model": model})
             return r["choices"][0]["message"]["content"] or ""
