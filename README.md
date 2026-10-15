@@ -19,8 +19,8 @@ in the cloud, or none at all. He speaks Derja first. *Kol nhar, mas3oud*: every 
 
 <img src="docs/masoud-moods.png" alt="Nine moods: Labes, Mrigel!, Mghboun, Harissa!, Ya mimti!, Na3sen, Mghrom, Chkoun?!, Dawkha!">
 
-He boots on his logo, says *Aslema! Ena Masoud.* on Serial, then lives on his own: blinks,
-glances, and every few seconds a mood. Drive him from the Serial Monitor (115200), one key at a time:
+He boots on his logo with a hello chirp, then lives on his own: glowing eyes with sparkles,
+blinks, glances, blush when he's happy, and every few seconds a mood with its own sound. Drive him from the Serial Monitor (115200), one key at a time:
 
 | Key | Mood | Key | Mood |
 |---|---|---|---|
@@ -32,9 +32,38 @@ glances, and every few seconds a mood. Drive him from the Serial Monitor (115200
 
 `4 6 8 2 5` look around, `x` turns autonomous mode on and off. Each mood change is printed in Derja.
 
+### His voice
+
+Masoud uses the same **PAM8403 amp and two small speakers** as the arduino-sound-player
+project. The only change is the pin: that project used D9/D10, which drive Masoud's screen,
+so the amp input moves to **D3** (Timer2's free PWM output; Timer1 becomes the 8 kHz sample clock).
+
+```
+D3  -> PAM8403 left AND right input        optional: D3 --[1k]--+-- amp in, 10 nF to GND
+5V  -> PAM8403 VCC
+GND -> PAM8403 GND
+PAM8403 L/R out -> the two speakers
+```
+
+- **Chirps, no PC needed:** every mood has its own robot chirp, synthesized on the Uno
+  (rising for *Mrigel!*, a sigh for *Mghboun*, a buzz for *Harissa!*, a wobble for *Dawkha!*),
+  plus a hello at boot.
+- **Speech from the PC:** `tools/masoud_say.py` turns Arabic text into Microsoft's Tunisian
+  voice (`ar-TN-HediNeural`, pitched up a little), shapes it for 28 mm speakers and streams it
+  over USB with the sound project's credit flow control. His eyes pulse while he talks.
+
+```sh
+pip install edge-tts pyserial          # and ffmpeg on PATH
+python tools/masoud_say.py "أسلامة! أنا مسعود" --mood h
+python tools/masoud_say.py "أسلامة" --preview hello.wav    # hear it without the robot
+```
+
+Listen to [`docs/masoud-voice-sample.wav`](docs/masoud-voice-sample.wav) for what he sounds like
+(8 kHz, 8-bit, exactly what the robot plays).
+
 ### Build and flash
 
-Wiring (Uno → LCD header): 3.3V→VCC, GND→GND, D13→SCK, D11→MOSI, D10→LCD_CS, D9→DC, D8→RST.
+Wiring (Uno → LCD header): 3.3V→VCC, GND→GND, D13→SCK, D11→MOSI, D10→LCD_CS, D9→DC, D8→RST. Sound: D3 → PAM8403 (above).
 The panel is 3.3 V only and RGB order (MADCTL `0x60`). Close the IDE's Serial Monitor before uploading.
 
 ```sh

@@ -8,12 +8,15 @@
 //   u Ya mimti! (surprised)   z Na3sen (sleepy)   l Mghrom (in love)
 //   ? Chkoun?! (suspicious)   d Dawkha! (dizzy: what a shake will trigger)
 //   b blink  w wink  4/6/8/2 look left/right/up/down  5 center  x autonomous on/off
+// Sound (masoud_audio.h): a chirp for every mood through the PAM8403 amp on D3,
+// and speech streamed from the PC: tools/masoud_say.py "text" (byte 0x01 starts it).
 //
 // Wiring: SCK=D13, MOSI=D11, CS=D10, DC=D9, RST=D8, VCC=3.3V (see README).
 
 #include <SPI.h>
 #include "emo_face.h"
 #include "splash.h"
+#include "masoud_audio.h"
 
 #define TFT_CS  10
 #define TFT_DC   9
@@ -88,7 +91,9 @@ struct Panel {
   void run(uint16_t color, uint16_t n) {
     uint8_t hi = color >> 8, lo = color;
     while (n--) { spiWrite(hi); spiWrite(lo); }
+    if (++pumpTick >= 6) { pumpTick = 0; audio::pump(); }   // keep streamed speech flowing mid-frame
   }
+  uint8_t pumpTick = 0;
   void end() {
     digitalWrite(TFT_CS, HIGH);
     SPI.endTransaction();
@@ -162,8 +167,10 @@ void setup() {
   pinMode(TFT_RST, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
   SPI.begin();
+  audio::begin();
   initPanel();
   drawSplash();
+  audio::hello();
   Serial.println(F("Aslema! Ena Masoud. Kol nhar, mas3oud."));
   Serial.println(F("Moods: n Labes, h Mrigel!, s Mghboun, a Harissa!, u Ya mimti!,"));
   Serial.println(F("       z Na3sen, l Mghrom, ? Chkoun?!, d Dawkha! (shake)"));
@@ -174,8 +181,11 @@ void setup() {
 }
 
 void loop() {
-  while (Serial.available()) {
+  audio::pump();
+  while (!audio::isStreaming() && Serial.available()) {
     char c = Serial.read();
+    if (c == audio::START) { audio::beginStream(); break; }   // the rest is speech
+    if (c == 0x05) { Serial.println(F("MASOUD")); continue; }  // "who are you?" for port finding
     if (face.command(c)) {
       Serial.print(F("> ")); Serial.print(c);
       if (c == 'x') Serial.print(face.autoMode() ? F(" auto on") : F(" auto off"));
@@ -187,8 +197,12 @@ void loop() {
   float dt = (now - lastMicros) * 1e-6f;
   lastMicros = now;
   if (dt > 0.1f) dt = 0.1f;
+  static float talk = 0;
+  float level = audio::talking() ? audio::takePeak() / 90.0f : 0;
+  talk += ((level > 1 ? 1 : level) - talk) * (level > talk ? 0.6f : 0.25f);
+  face.setTalk(talk);
   face.update(dt);
-  if (face.mood() != shownMood) { shownMood = face.mood(); printMood(shownMood); }
+  if (face.mood() != shownMood) { shownMood = face.mood(); printMood(shownMood); audio::playMood(shownMood); }
   uint32_t t1 = micros();
   face.render(panel);
   drawMicros += micros() - t1;
