@@ -63,6 +63,7 @@ const Note *const MOOD_SOUND[] = {nullptr, S_HAPPY, S_SAD, S_ANGRY, S_SURPRISED,
 
 static uint8_t ring[RING];
 static volatile uint16_t head = 0, tail = 0, underruns = 0;
+static volatile uint16_t dry = 0;        // empty-buffer samples not yet known to be a real gap
 static volatile bool playing = false, feeding = false;
 static volatile uint8_t last = 128, peak = 0;
 static volatile uint8_t bias = 0;            // 0 when quiet, ramps to 128 while sounding
@@ -110,7 +111,7 @@ ISR(TIMER1_COMPA_vect) {
   if (playing) {
     uint16_t t = tail;
     if (head != t) { s = ring[t]; tail = t + 1 == RING ? 0 : t + 1; last = s; }
-    else { s = last; if (feeding) underruns++; }   // hold the level: a jump would click
+    else { s = last; if (feeding) dry++; }   // hold the level: a jump would click
   } else {
     s = synth();
   }
@@ -151,8 +152,8 @@ static bool talking() { return playing; }
 static bool isStreaming() { return streaming; }
 
 static void beginStream() {
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { head = tail = 0; song = nullptr; left = 0; }
-  outstanding = 0; rxSinceCredit = 0; underruns = 0;
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { head = tail = 0; song = nullptr; left = 0; dry = 0; underruns = 0; }
+  outstanding = 0; rxSinceCredit = 0;
   streaming = true; gotData = false; playing = false; feeding = false;
   lastAudio = millis();
   Serial.println(F("OK:START"));
@@ -181,7 +182,9 @@ static void pump() {
       h = next;
       rxSinceCredit++;
     }
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { head = h; }
+    // dry samples followed by more audio were a real gap; the drain after
+    // the last chunk is not, so it never gets counted
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { head = h; underruns += dry; dry = 0; }
     lastAudio = millis();
     gotData = true;
   }

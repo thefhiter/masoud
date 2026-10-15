@@ -147,7 +147,8 @@ class Face {
     if (mood_ == SLEEPY) zPhase_ += dt * 0.45f;
   }
 
-  // Sink: window(x0, y0, x1, y1) inclusive, run(color, count), end().
+  // Sink: window(x0, y0, x1, y1) inclusive, row() before each row (a moment for
+  // other work, e.g. audio), run(color, count), end().
   template <class Sink>
   void render(Sink &sink) {
     EyeDraw eyes[2];
@@ -177,6 +178,7 @@ class Face {
     sink.window(win[0], win[1], win[2], win[3]);
     Seg seg[24];
     for (int16_t y = win[1]; y <= win[3]; y++) {
+      sink.row();
       float yc = y + 0.5f;
       uint8_t n = 0;
       for (uint8_t s = 0; s < 2; s++) {

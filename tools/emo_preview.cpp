@@ -28,6 +28,7 @@ struct Screen {
     windows++; windowArea += area;
     if (area > maxWindow) maxWindow = area;
   }
+  void row() {}
   void run(uint16_t color, uint16_t n) {
     while (n--) {
       if (y > y1) { fprintf(stderr, "run past window\n"); return; }

@@ -91,9 +91,8 @@ struct Panel {
   void run(uint16_t color, uint16_t n) {
     uint8_t hi = color >> 8, lo = color;
     while (n--) { spiWrite(hi); spiWrite(lo); }
-    if (++pumpTick >= 6) { pumpTick = 0; audio::pump(); }   // keep streamed speech flowing mid-frame
   }
-  uint8_t pumpTick = 0;
+  void row() { audio::pump(); }   // keep streamed speech flowing mid-frame (a row is ~2 ms)
   void end() {
     digitalWrite(TFT_CS, HIGH);
     SPI.endTransaction();
@@ -221,13 +220,21 @@ void loop() {
   frames++;
 
   uint32_t ms = millis();
-  if (ms - lastCheck > 2000) {
+  // Every 2 s ask the panel if it is still awake. Re-initialize only a panel
+  // that answered before (a never-answering one is a wiring problem, and the
+  // 0.8 s re-init would just starve the audio), and never mid-speech.
+  static bool panelSeen = false, panelWarned = false;
+  if (ms - lastCheck > 2000 && !audio::isStreaming()) {
     lastCheck = ms;
     uint8_t pm = panelPowerMode();
-    if (pm != 0x9C) {        // a loose RST/VCC wire reset the panel: set it up, repaint all
+    if (pm == 0x9C) panelSeen = true;
+    else if (panelSeen) {    // a loose RST/VCC wire reset the panel: set it up, repaint all
       Serial.print(F("panel was reset (power mode 0x")); Serial.print(pm, HEX); Serial.println(F(")"));
       initPanel();
       face.invalidate();
+    } else if (!panelWarned) {
+      panelWarned = true;
+      Serial.println(F("screen does not answer: check its wiring (sound still works)"));
     }
   }
   if (ms - fpsStart >= 5000) {
