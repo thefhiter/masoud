@@ -4,7 +4,7 @@
 
 **Masoud** (مسعود, "the lucky one") is a Tunisian desk buddy robot: a face that shows how he
 feels, a voice, a shake sensor, and an AI mind you choose on day one, on your own computer,
-in the cloud, or none at all. He speaks Derja first. *Kol nhar, mas3oud*: every day, a lucky one.
+in the cloud, or none at all. He speaks English, French and Arabic. *Kol nhar, mas3oud*: every day, a lucky one.
 
 | Folder | What's in it |
 |---|---|
@@ -62,14 +62,17 @@ PAM8403 L/R out -> the two speakers
 - **Chirps, optional:** every mood has its own robot chirp, synthesized on the Uno
   (rising for *Mrigel!*, a sigh for *Mghboun*, a buzz for *Harissa!*, a wobble for *Dawkha!*),
   plus a hello at boot.
-- **Speech from the PC:** `tools/masoud_say.py` turns Arabic text into Microsoft's Tunisian
-  voice (`ar-TN-HediNeural`, pitched up a little), shapes it for 28 mm speakers and streams it
-  over USB with the sound project's credit flow control. His eyes pulse while he talks.
+- **Speech from the PC:** `tools/masoud_say.py` turns text into Microsoft's multilingual voice
+  Remy (`fr-FR-RemyMultilingualNeural`, the same voice in English, French and Arabic, pitched up a
+  little), shapes it for 28 mm speakers and streams it over USB with the sound project's credit flow
+  control. His eyes pulse while he talks. The Uno buffers 64 ms of speech (512 bytes), enough to ride
+  out a hiccup on the PC: with 32 ms, one answer in five had a 25 ms click.
 
-**He always talks:** `tools/masoud_live.py` greets you, says a Derja line on every mood change
-(*هريسة! ما تقلقنيش!*, *نحبك برشا!*...), and after ~30 s of quiet says something by himself
-(water, coffee, *شبيك ساكت؟*, good morning or good night by the clock). Type a sentence to make him
-say it, or a mood key (`h s a u z l ? d n`). Lines are cached, so he answers instantly.
+**He always talks:** `tools/masoud_live.py` greets you, says a line on every mood change
+(*Grr! Don't make me angry!*, *Je t'adore !*, *أحبك كثيرا!*...), and after ~30 s of quiet says something
+by himself (water, a break, *why so quiet?*, good morning or good night by the clock), in the language he
+last spoke. Type a sentence to make him say it, or a mood key (`h s a u z l ? d n`). Lines are cached,
+so he answers instantly.
 
 - `python tools/masoud_live.py --install`: start with Windows in the background; it waits for him to
   be plugged in and reconnects after unplugging (log in `%LOCALAPPDATA%\masoud\live.log`).
@@ -80,8 +83,8 @@ say it, or a mood key (`h s a u z l ? d n`). Lines are cached, so he answers ins
 pip install edge-tts pyserial          # and ffmpeg on PATH
 python tools/masoud_live.py            # he talks by himself and answers you (chat page or here)
 python tools/masoud_live.py --install  # ...always, from every Windows start
-python tools/masoud_say.py "أسلامة! أنا مسعود" --mood h
-python tools/masoud_say.py "أسلامة" --preview hello.wav    # hear it without the robot
+python tools/masoud_say.py "Bonjour ! Je suis Massoud" --mood h
+python tools/masoud_say.py "مرحبا" --preview hello.wav     # hear it without the robot
 ```
 
 Listen to [`docs/masoud-voice-sample.wav`](docs/masoud-voice-sample.wav) for what he sounds like
@@ -89,12 +92,12 @@ Listen to [`docs/masoud-voice-sample.wav`](docs/masoud-voice-sample.wav) for wha
 
 ### Chat with him: his AI mind
 
-<img src="docs/masoud-chat.png" alt="The chat page: Masoud's live face on the left, a conversation on the right where he answers English and Arabizi messages in Derja with a mood on each answer">
+<img src="docs/masoud-chat.png" alt="The chat page: Masoud's live face on the left, a conversation on the right where he answers in English, French and Arabic with a mood on each answer">
 
 While `masoud_live.py` runs, open **http://127.0.0.1:8766** (`--install` puts a *Chat with Masoud*
-shortcut on the Desktop). Write in Derja, Arabizi, French or English: his mind answers in Derja
-written in Arabic letters, his face on the robot (and on the page) takes the answer's mood, and he
-says it out loud. *He says it* mode, or a message that starts with `!`, makes him say your words exactly.
+shortcut on the Desktop). Write in English, French or Arabic: his mind answers in the same language
+(Arabizi gets Arabic), his face on the robot (and on the page) takes the answer's mood, and he says it
+out loud. *Mind → Language* can fix one language instead. *He says it* mode, or a message that starts with `!`, makes him say your words exactly.
 The mood buttons poke his face. If the background talker is running, `python tools/masoud_live.py`
 in a terminal chats through it too.
 
@@ -112,28 +115,18 @@ that works. Any other choice goes first, and the rest back it up, so he never go
 
 Keys stay on this PC and never go back to the page. The server only listens on 127.0.0.1 and
 refuses requests from other websites. From your message, his text shows in about 1 s and his
-voice starts after 3 to 5 s: the Tunisian voice takes about 2 s to render.
+voice starts after 3 to 5 s: the voice takes about 2 s to render.
 
-**His Derja** (`tools/masoud_derja.py`): every mind gets a short Derja guide (Tunisian words for
-what / why / now / a lot..., ما...ش negation, باش future, no MSA and no Egyptian, Levantine, Gulf or
-Moroccan words, a warm cheeky-cousin tone, family-friendly), plus a few original example exchanges.
-Each answer is then checked: MSA words with a one-to-one Derja word are swapped (الآن → توّا,
-المكتب → البيرو, نهدر → نحكي), and if MSA grammar is left (سوف, لا أعرف...) the mind rewrites the
-answer in Derja. `--eval` sends 24 messages (English, French, Arabizi, Derja and MSA) and scores them:
-
-| | Before | Now |
-|---|---|---|
-| Answers with MSA or another dialect | 29% | 0% |
-| Coffee or couscous brought up off-topic | 50% | 4% |
-| يا حسرة ("what a pity") said to good news | 2 | 0 |
-| Average answer time (Groq) | 1.4 s | 1.1 s |
-
-The prompt is kept short (about 900 tokens) because Groq's free tier allows 8,000 tokens a minute;
-when the big model's minute is used up he answers with the smaller one.
+**His languages:** `python tools/masoud_mind.py --eval` sends 12 messages (English, French, Arabic
+and Arabizi) and checks the answer's language: 12/12, 1.2 s average on Groq. One voice, Remy, says all
+three; whatever he says in Latin letters spells his name "Massoud", because voices read "Masoud" as
+"Mazou" in French and "a sued" in English (checked with Whisper). The prompt is kept short because
+Groq's free tier allows 8,000 tokens a minute; when the big model's minute is used up the smaller
+one answers.
 
 ```sh
-python tools/masoud_derja.py --eval --mind groq       # score his Derja (about 4 minutes, paced)
-python tools/masoud_mind.py "Aslema, chnahwelek?"     # test his mind alone, no robot
+python tools/masoud_mind.py --eval --mind groq        # right language? (about 2 minutes, paced)
+python tools/masoud_mind.py "Salut, ça va ?"          # test his mind alone, no robot
 python tools/masoud_mind.py --chat --mind groq        # a console chat with one mind
 ```
 

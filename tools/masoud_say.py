@@ -1,14 +1,14 @@
-"""Make Masoud talk: text -> Tunisian voice -> his speakers.
+"""Make Masoud talk: text -> his voice -> his speakers.
 
-    python tools/masoud_say.py "أسلامة! أنا مسعود"              # speak, port found automatically
-    python tools/masoud_say.py "مريڨل!" --mood h                # set his face first (h = happy)
+    python tools/masoud_say.py "Hello! I'm Massoud"             # speak, port found automatically
+    python tools/masoud_say.py "Je suis content !" --mood h     # set his face first (h = happy)
     python tools/masoud_say.py --file song.mp3                  # any audio file
-    python tools/masoud_say.py "أسلامة" --preview hello.wav     # no robot: write what he'd sound like
+    python tools/masoud_say.py "مرحبا" --preview hello.wav       # no robot: write what he'd sound like
 
-The voice is Microsoft's Tunisian Arabic neural voice (edge-tts, ar-TN-HediNeural),
-pitched up a little so it sounds like a small robot, band-limited for the tiny
-speakers, and sent as 8-bit 8 kHz mono. Write the text in Arabic letters; the
-voice reads Latin-letter Derja badly.
+The voice is Microsoft's multilingual neural voice Remy (edge-tts,
+fr-FR-RemyMultilingualNeural): the same voice speaks English, French and Arabic.
+It is pitched up a little so it sounds like a small robot, band-limited for the
+tiny speakers, and sent as 8-bit 8 kHz mono.
 
 Streaming uses the same credit flow control as the arduino-sound-player project:
 send 0x01, wait for OK:START, then send exactly CHUNK bytes per 0x06 credit.
@@ -28,7 +28,7 @@ from serial.tools import list_ports
 
 RATE, CHUNK, BAUD = 8000, 32, 115200
 START, CREDIT, WHO = b"\x01", b"\x06", b"\x05"
-VOICE = "ar-TN-HediNeural"
+VOICE = "fr-FR-RemyMultilingualNeural"   # one voice for English, French and Arabic
 
 
 def tts(text, voice, out):
@@ -132,10 +132,10 @@ def stream(s, data):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("text", nargs="?", help="what Masoud says (Arabic letters)")
+    ap.add_argument("text", nargs="?", help="what Masoud says (English, French or Arabic)")
     ap.add_argument("--file", help="play an audio file instead of speaking text")
     ap.add_argument("--mood", help="face to show first: n h s a u z l ? d")
-    ap.add_argument("--voice", default=VOICE, help="edge-tts voice, e.g. ar-TN-ReemNeural")
+    ap.add_argument("--voice", default=VOICE, help="edge-tts voice, e.g. en-US-AndrewMultilingualNeural")
     ap.add_argument("--pitch", type=float, default=1.12, help="1.0 = natural voice")
     ap.add_argument("--port", help="COM port (found automatically otherwise)")
     ap.add_argument("--preview", help="write a WAV of what he'd say instead of sending it")

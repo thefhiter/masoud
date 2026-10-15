@@ -6,20 +6,20 @@
     python tools/masoud_live.py --uninstall    # no more autostart
 
 Chat with him at http://127.0.0.1:8766 (the "Chat with Masoud" shortcut on the
-Desktop): you type, his mind (masoud_mind.py) answers in Derja, his face
+Desktop): you type, his mind (masoud_mind.py) answers in your language (English, French or Arabic), his face
 takes the mood of the answer and he says it out loud. In "Say it" mode, or
 with a message that starts with "!", he says your words exactly. In a console
 you can type to him too; when the background one is already running, the
 console chats through it.
 
-On his own he greets you, says a Derja line on every mood change, and when
-it has been quiet for a while he says something: water, coffee, "why so
-quiet?", good morning or good night by the clock.
+On his own he greets you, says a line on every mood change, and when
+it has been quiet for a while he says something: water, a break, "why so
+quiet?", good morning or good night by the clock, in the language he last spoke.
 
 In the background (--wait, which --install uses) it waits for Masoud to be
 plugged in and reconnects if he is unplugged. It holds his USB port while it
 runs, so stop it before uploading a sketch. Log: %LOCALAPPDATA%\\masoud\\live.log
-Lines are rendered once with the Tunisian voice and cached in
+Lines are rendered once with his voice and cached in
 %LOCALAPPDATA%\\masoud\\voice. Needs: pip install edge-tts pyserial, ffmpeg on PATH.
 """
 import argparse
@@ -29,6 +29,7 @@ import json
 import os
 import queue
 import random
+import re
 import subprocess
 import sys
 import tempfile
@@ -56,41 +57,53 @@ CHAT_URL = f"http://127.0.0.1:{CHAT_PORT}/"
 PAGE = Path(__file__).with_name("masoud_chat.html")
 BRAND = Path(__file__).resolve().parent.parent / "brand"
 
-GREETING = "أسلامة! أنا مسعود. كل نهار، مسعود!"
 MOOD_KEYS = "nhsauzl?d"
-# The names the robot prints on Serial, in MOOD_KEYS order.
+# The names the robot prints on Serial, in MOOD_KEYS order (the firmware's own names).
 MOOD_NAMES = ["Labes", "Mrigel!", "Mghboun", "Harissa!", "Ya mimti!", "Na3sen", "Mghrom", "Chkoun?!", "Dawkha! Bchwaya 3liya!"]
+GREETING = {
+    "en": "Hello! I'm Masoud, your desk buddy. Every day is a lucky day!",
+    "fr": "Salut ! Moi c'est Masoud, ton copain de bureau. Chaque jour est un jour de chance !",
+    "ar": "مرحبا! أنا مسعود، صديقك على المكتب. كل يوم هو يوم سعيد!",
+}
+OFFLINE = {
+    "en": "My brain is offline right now... try again in a moment.",
+    "fr": "Mon cerveau est en panne... réessaie dans un instant.",
+    "ar": "عقلي لا يعمل الآن... حاول بعد قليل.",
+}
 # What he says for each mood, keyed by the name the robot prints on Serial.
 LINES = {
-    "Mrigel!": "باهي برشا! أنا فرحان.",
-    "Mghboun": "آه... أنا مغبون شوية.",
-    "Harissa!": "هريسة! ما تقلقنيش!",
-    "Ya mimti!": "يا ميمتي! شنوة هذا؟",
-    "Na3sen": "نعسان... خليني نرقد شوية.",
-    "Mghrom": "نحبك برشا!",
-    "Chkoun?!": "شكون؟ شكون غادي؟",
-    "Dawkha! Bchwaya 3liya!": "دوخة! بالشوية عليا!",
+    "Mrigel!": {"en": "Yay! I'm so happy!", "fr": "Youpi ! Je suis trop content !", "ar": "رائع! أنا سعيد جدا!"},
+    "Mghboun": {"en": "Oh... I feel a little sad.", "fr": "Oh... je suis un peu triste.", "ar": "آه... أشعر ببعض الحزن."},
+    "Harissa!": {"en": "Grr! Don't make me angry!", "fr": "Grr ! Ne m'énerve pas !", "ar": "لا تغضبني!"},
+    "Ya mimti!": {"en": "Whoa! What was that?", "fr": "Oh là là ! C'était quoi, ça ?", "ar": "يا إلهي! ما هذا؟"},
+    "Na3sen": {"en": "So sleepy... let me nap a little.", "fr": "J'ai sommeil... laisse-moi faire une petite sieste.",
+               "ar": "أنا نعسان... دعني أغفو قليلا."},
+    "Mghrom": {"en": "I love you so much!", "fr": "Je t'adore !", "ar": "أحبك كثيرا!"},
+    "Chkoun?!": {"en": "Hmm, who's there?", "fr": "Hmm, qui est là ?", "ar": "همم، من هناك؟"},
+    "Dawkha! Bchwaya 3liya!": {"en": "Whoa, I'm dizzy! Easy on me!", "fr": "Oh, j'ai la tête qui tourne ! Doucement !",
+                               "ar": "أشعر بالدوار! على مهلك!"},
 }
 # What he says by himself when it has been quiet.
-CHATTER = [
-    "ما تنساش تشرب الماء!",
-    "شنوة أحوالك اليوم؟",
-    "أنا هنا، كان تحتاجني قولي.",
-    "تعرف؟ أنا روبو صغير، أما قلبي كبير.",
-    "يزي من الخدمة، ارتاح شوية.",
-    "شبيك ساكت؟",
-    "نحب نسمع شوية موسيقى!",
-    "تحب قهوة وإلا تاي؟",
-    "باهي برشا، نكملو؟",
-    "حكيلي حاجة!",
-    "كل نهار، مسعود!",
-]
-CLOCK = [  # (from hour, to hour, line)
-    (5, 12, "صباح الخير! نهارك مسعود."),
-    (12, 18, "العشية زينة، نكملو الخدمة؟"),
-    (18, 23, "مساء الخير! كيفاش كان نهارك؟"),
-    (23, 29, "الوقت فات... برا ارقد، تصبح على خير."),
-]
+CHATTER = {
+    "en": ["Don't forget to drink some water!", "How's your day going?", "I'm right here if you need me.",
+           "Did you know? I'm a small robot with a big heart.", "Time for a little break, maybe?", "Why so quiet?",
+           "I'd love some music right now!", "Tell me something fun!", "Every day is a lucky day!"],
+    "fr": ["N'oublie pas de boire de l'eau !", "Comment se passe ta journée ?", "Je suis là si tu as besoin de moi.",
+           "Tu sais quoi ? Je suis un petit robot avec un grand cœur.", "Et si on faisait une petite pause ?",
+           "Pourquoi tu ne dis rien ?", "J'écouterais bien un peu de musique !", "Raconte-moi un truc marrant !",
+           "Chaque jour est un jour de chance !"],
+    "ar": ["لا تنس أن تشرب الماء!", "كيف يمضي يومك؟", "أنا هنا إن احتجت إلي.", "هل تعلم؟ أنا روبوت صغير بقلب كبير.",
+           "ما رأيك في استراحة قصيرة؟", "لماذا أنت صامت؟", "أود سماع بعض الموسيقى الآن!", "أخبرني شيئا ممتعا!",
+           "كل يوم هو يوم سعيد!"],
+}
+CLOCK = {  # (from hour, to hour, line)
+    "en": [(5, 12, "Good morning! Have a lucky day."), (12, 18, "Good afternoon! Shall we keep going?"),
+           (18, 23, "Good evening! How was your day?"), (23, 29, "It's late... time to sleep. Good night!")],
+    "fr": [(5, 12, "Bonjour ! Passe une belle journée."), (12, 18, "Bon après-midi ! On continue ?"),
+           (18, 23, "Bonsoir ! Ta journée s'est bien passée ?"), (23, 29, "Il est tard... au lit. Bonne nuit !")],
+    "ar": [(5, 12, "صباح الخير! أتمنى لك يوما سعيدا."), (12, 18, "مساء الخير! هل نكمل العمل؟"),
+           (18, 23, "مساء الخير! كيف كان يومك؟"), (23, 29, "لقد تأخر الوقت... حان وقت النوم. تصبح على خير!")],
+}
 ARDUINO_VIDS = {0x2341, 0x2A03, 0x1A86, 0x0403, 0x10C4}   # Arduino, clones' CH340 / FTDI / CP210x
 
 
@@ -98,8 +111,15 @@ def say_print(*a):
     print(*a, flush=True)
 
 
+def speakable(text):
+    """Text as the voice should read it: "Masoud" in Latin letters comes out as "Mazou" in French
+    and "a sued" in English (checked with Whisper), "Massoud" is said right in both."""
+    return re.sub(r"\bMasoud\b", "Massoud", text, flags=re.I)
+
+
 def voice_clip(text, voice, pitch):
     """8 kHz u8 audio for text, from the cache or freshly rendered."""
+    text = speakable(text)
     key = hashlib.sha1(f"v3|{voice}|{pitch}|{text}".encode()).hexdigest()[:16]   # v3: louder processing
     path = CACHE / f"{key}.u8"
     if path.exists():
@@ -113,18 +133,18 @@ def voice_clip(text, voice, pitch):
     return data
 
 
-def clock_line():
+def clock_line(lang):
     h = time.localtime().tm_hour
-    for a, b, line in CLOCK:
+    for a, b, line in CLOCK[lang]:
         if a <= h < b or a <= h + 24 < b:
             return line
-    return CHATTER[0]
+    return CHATTER[lang][0]
 
 
-def pick_chatter(recent):
-    if random.random() < 0.25 and clock_line() not in recent:
-        return clock_line()
-    choices = [c for c in CHATTER if c not in recent] or CHATTER
+def pick_chatter(recent, lang):
+    if random.random() < 0.25 and clock_line(lang) not in recent:
+        return clock_line(lang)
+    choices = [c for c in CHATTER[lang] if c not in recent] or CHATTER[lang]
     return random.choice(choices)
 
 
@@ -140,14 +160,22 @@ class Hub:
         self.port = None          # COM name while Masoud is connected
         self.speaking = self.thinking = False
         self.mood = "n"
+        self.last_lang = "en"      # the language of his last answer: his own lines follow it
         self.todo = queue.Queue()  # jobs for the serial loop: ("face", keys) / ("speak", mood, text, clip)
         self.voice = queue.Queue()  # answers waiting for their voice, rendered in order
         threading.Thread(target=self.voice_worker, daemon=True).start()
+
+    def quiet(self):
+        """Wait while he is speaking. Rendering a voice at the same time starves the stream
+        (measured: 202 dropouts in one clip while the other languages were being rendered)."""
+        while self.speaking:
+            time.sleep(0.05)
 
     def voice_worker(self):
         """Render answers' voices off the chat thread, so the text shows at once."""
         while True:
             mood, text = self.voice.get()
+            self.quiet()
             try:
                 clip = voice_clip(text, self.args.voice, self.args.pitch)
             except Exception as e:                    # no internet for the voice, ffmpeg missing...
@@ -156,6 +184,12 @@ class Hub:
                 continue
             if self.port:
                 self.todo.put(("speak", mood, text, clip))
+
+    @property
+    def lang(self):
+        """The language of his own lines: the setting, or (auto) the one he last answered in."""
+        forced = self.mind.language()
+        return forced if forced in mm.LANGUAGES else self.last_lang
 
     def add(self, who, text, kind, **extra):
         with self.lock:
@@ -168,7 +202,8 @@ class Hub:
         with self.lock:
             return {"events": [e for e in self.events if e["id"] > since], "port": self.port,
                     "speaking": self.speaking, "thinking": self.thinking, "mood": self.mood,
-                    "mind": mm.LABELS.get(self.mind.describe(), self.mind.describe())}
+                    "mind": mm.LABELS.get(self.mind.describe(), self.mind.describe()),
+                    "language": self.mind.language()}
 
     def message(self, text, mode="chat", cid=None):
         """Your message -> his answer (or your words, in "say" mode), queued to be spoken."""
@@ -183,6 +218,7 @@ class Hub:
         mood, used, seconds, extra = None, None, 0.0, {}
         if mode == "say":
             said, kind = text, "said"
+            self.last_lang = mm.detect_lang(text)
         else:
             self.thinking = True
             self.todo.put(("face", "8"))              # eyes up: he is thinking
@@ -191,10 +227,12 @@ class Hub:
                 seconds, kind = self.mind.last_seconds, "reply"
             except mm.MindError as e:                 # every mind failed: he says so, never stays silent
                 say_print(f"  (his mind failed: {e})")
-                mood, said, kind, extra["error"] = "s", "ما نجمتش نفكر توا... عاود بعد شوية.", "error", str(e)
+                mood, said, kind, extra["error"] = "s", OFFLINE[self.lang], "error", str(e)
             finally:
                 self.thinking = False
             self.mood = mood
+            if kind == "reply":
+                self.last_lang = mm.detect_lang(said)
             failed = [mm.LABELS.get(m, m) for m in self.mind.failed if m != used]
             if failed:                                # the chosen mind failed and a backup answered
                 extra["failed"] = failed
@@ -272,6 +310,8 @@ class ChatServer(BaseHTTPRequestHandler):
             s = mm.load_settings()
             if body.get("mind") in ("auto",) + mm.MINDS:
                 s["mind"] = body["mind"]
+            if body.get("language") in ("auto",) + tuple(mm.LANGUAGES):
+                s["language"] = body["language"]
             for k in ("groq_key", "anthropic_key"):
                 if isinstance(body.get(k), str) and body[k].strip():
                     s[k] = body[k].strip()
@@ -426,6 +466,8 @@ def live(args):
         say_print("Masoud's talker is already running (use --stop first).")
         return
     PIDFILE.write_text(str(os.getpid()))
+    k32 = ctypes.windll.kernel32                   # his voice must not wait behind other programs
+    k32.SetPriorityClass(k32.GetCurrentProcess(), 0x8000)   # ABOVE_NORMAL_PRIORITY_CLASS
     mind = mm.Mind()
     hub = Hub(mind, args)
     say_print(f"his mind: {mm.LABELS.get(mind.describe())} (in order: {', '.join(mind.order())})")
@@ -434,8 +476,17 @@ def live(args):
     if args.open:
         webbrowser.open(CHAT_URL)
     say_print("preparing his voice lines...")
-    moods = {name: voice_clip(text, args.voice, args.pitch) for name, text in LINES.items()}
-    hello = voice_clip(GREETING, args.voice, args.pitch)
+    voice_clip(GREETING[hub.lang], args.voice, args.pitch)
+
+    def warm_lines():                    # render (or load) every line in every language, once, in the background
+        for lang in mm.LANGUAGES:
+            for text in [GREETING[lang], OFFLINE[lang]] + [v[lang] for v in LINES.values()] + CHATTER[lang] + [c[2] for c in CLOCK[lang]]:
+                hub.quiet()
+                try:
+                    voice_clip(text, args.voice, args.pitch)
+                except Exception:
+                    return               # offline: they render when first needed
+    threading.Thread(target=warm_lines, daemon=True).start()
     interactive = bool(sys.stdin and sys.stdin.isatty())
     if interactive:
         threading.Thread(target=console, args=(hub,), daemon=True).start()
@@ -463,8 +514,9 @@ def live(args):
         say_print(f"Masoud found on {port.port}." + (" Type to him here, or use the chat page." if interactive else ""))
         while not hub.todo.empty():          # nothing stale from while he was away
             hub.todo.get_nowait()
-        hub.add("masoud", GREETING, "auto", mood="h")
-        speak(port, hello, GREETING)
+        hello = GREETING[hub.lang]
+        hub.add("masoud", hello, "auto", mood="h")
+        speak(port, voice_clip(hello, args.voice, args.pitch), hello)
         buf, last_spoke, quiet_moods_until = b"", time.time(), 0.0
         next_chat = time.time() + args.every * random.uniform(0.7, 1.3)
         try:
@@ -477,15 +529,16 @@ def live(args):
                         mood = line[1:-1]
                         hub.mood = MOOD_KEYS[MOOD_NAMES.index(mood)]
                         now = time.time()
-                        if mood in moods and now - last_spoke > args.quiet_gap and now > quiet_moods_until:
-                            hub.add("masoud", LINES[mood], "auto", mood=hub.mood)
-                            speak(port, moods[mood], f"[{mood}] {LINES[mood]}")
+                        if mood in LINES and now - last_spoke > args.quiet_gap and now > quiet_moods_until:
+                            text = LINES[mood][hub.lang]
+                            hub.add("masoud", text, "auto", mood=hub.mood)
+                            speak(port, voice_clip(text, args.voice, args.pitch), f"[{mood}] {text}")
                             last_spoke, buf = time.time(), b""
                             next_chat = last_spoke + args.every * random.uniform(0.7, 1.3)
                 if hub.thinking:                 # an answer is on its way: no chatter now
                     next_chat = max(next_chat, time.time() + 5)
                 if args.every > 0 and time.time() > next_chat:
-                    text = pick_chatter(recent)
+                    text = pick_chatter(recent, hub.lang)
                     recent = (recent + [text])[-4:]
                     hub.add("masoud", text, "auto")
                     speak(port, voice_clip(text, args.voice, args.pitch), text)

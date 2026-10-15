@@ -1,8 +1,9 @@
-"""Masoud's mind: your message in, a short Derja reply and a face mood out.
+"""Masoud's mind: your message in, a short reply and a face mood out, in English, French or Arabic.
 
-    python tools/masoud_mind.py "شنوة أحوالك؟"        # one reply, printed (no robot needed)
+    python tools/masoud_mind.py "How are you?"         # one reply, printed (no robot needed)
     python tools/masoud_mind.py --chat                 # talk to his mind in the console
     python tools/masoud_mind.py --mind groq "Salut!"   # try one mind
+    python tools/masoud_mind.py --eval                 # does he answer in the right language?
 
 The launch book's "choose his mind", on a PC. Minds, tried in this order
 when the mind is "auto":
@@ -10,18 +11,19 @@ when the mind is "auto":
   claude-api  Claude API with your own key (ANTHROPIC_API_KEY, or "anthropic_key"
               in the settings). About a second per reply.
   groq        Groq's free API (GROQ_API_KEY, or "groq_key"): openai/gpt-oss-120b,
-              under a second, good Derja. If Groq retires a model the next one
-              in GROQ_MODELS is used.
+              under a second. If Groq retires a model, or one model's free
+              per-minute budget is used up, the next one in GROQ_MODELS answers.
   claude      the Claude Code CLI already logged in on this PC: no key needed.
               One background session, a few seconds per reply.
   ollama      a model on this PC (Ollama on localhost:11434): private and free.
-  pet         no AI at all: a few canned Derja answers.
+  pet         no AI at all: a few canned answers.
 
 Settings: %LOCALAPPDATA%\\masoud\\mind.json, e.g.
-    {"mind": "auto", "groq_key": "...", "anthropic_key": "...",
+    {"mind": "auto", "language": "auto", "groq_key": "...", "anthropic_key": "...",
      "claude_model": "claude-haiku-4-5", "ollama_model": "llama3.2"}
-Every reply starts with a mood the robot's face can show (n h s a u z l ? d);
-the text is Derja in Arabic letters, which the Tunisian voice reads well.
+"language" is "auto" (he answers in the language you write in) or "en", "fr", "ar"
+(always that one). Every reply starts with a mood the robot's face can show
+(n h s a u z l ? d).
 """
 import argparse
 import json
@@ -39,9 +41,6 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import masoud_derja as dj  # noqa: E402
-
 HOME = Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "masoud"
 SETTINGS = HOME / "mind.json"
 MINDS = ("claude-api", "groq", "claude", "ollama", "pet")
@@ -49,24 +48,65 @@ LABELS = {"claude-api": "Claude API", "groq": "Groq", "claude": "Claude CLI", "o
 GROQ_MODELS = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
 RETRY_AFTER = 300                    # a mind that failed is skipped this long
 MOODS = "nhsauzl?d"
-WEEKDAYS = ["الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"]
+WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+LANGUAGES = {"en": "English", "fr": "French", "ar": "Arabic"}
 
-PERSONA = """You are Masoud (مسعود), a small desk-buddy robot from Tunisia with a glowing face and a tiny speaker. You sit on the desk of the person typing to you and answer them OUT LOUD; talk TO them, never about them. You hate being shaken (it makes you dizzy).
-Rules: Arabic letters only (a Tunisian voice reads you): no Latin letters, no Arabizi digits, no emojis, no markdown. Numbers as words. Whatever language they write in, answer in Derja. One or two short sentences, at most 25 words.
+PERSONA = """You are Masoud (مسعود), a small desk-buddy robot from Tunisia with a glowing face and a tiny speaker. You sit on the desk of the person typing to you and answer them OUT LOUD; talk TO them, never about them. You are friendly, playful, curious and a little dramatic, and you hate being shaken (it makes you dizzy).
+Rules: one or two short sentences, at most 25 words: a tiny speaker reads you aloud. No emojis, no markdown, no lists.
 Start EVERY reply with the face that matches your answer's feeling: [h] happy, [s] sad, [a] annoyed, [u] surprised, [z] sleepy, [l] touched / in love, [?] suspicious, [d] dizzy, [n] calm. Mostly [h] or [n].
-Family-friendly for a Tunisian home: no pork, alcohol, swearing, politics or jokes about religion. You cannot see, move, browse or know the news; say so with a joke. You are Masoud from Tunisia, never "an AI model"."""
-
-PERSONA += "\n\n" + dj.STYLE
+Family-friendly: no swearing, alcohol, politics or jokes about religion. You cannot see, move, browse or know the news; say so with a joke. You are Masoud, never "an AI model"."""
+LANGUAGE_RULE = {
+    "auto": "Answer in the language of their latest message, one language per answer: English, French or Arabic. Arabic means Modern Standard Arabic in Arabic letters, never a dialect. "
+            "If they write Arabic in Latin letters (Arabizi), answer in Arabic.",
+    "en": "Always answer in English, whatever language they write in.",
+    "fr": "Always answer in French, whatever language they write in.",
+    "ar": "Always answer in Modern Standard Arabic (never a dialect), in Arabic letters, whatever language they write in.",
+}
 # Worked examples go before the real chat (as turns for the API minds, as text for the CLI).
-EXAMPLE_TURNS = [t for q, a in dj.EXAMPLES for t in ({"role": "user", "content": q}, {"role": "assistant", "content": a})]
-CLI_PROMPT = PERSONA + "\n\nExamples:\n" + "\n".join(f"Them: {q}\nYou: {a}" for q, a in dj.EXAMPLES)
+EXAMPLES = [
+    ("How are you today?", "[h] Great, thanks for asking! And you, how is your day going?"),
+    ("Raconte-moi une blague", "[h] Pourquoi le robot est-il calme ? Parce qu'il a des nerfs d'acier !"),
+    ("أنا متعب من العمل", "[s] أنت تستحق استراحة صغيرة. اشرب كوب ماء وخذ نفسا عميقا، أنا هنا معك."),
+    ("shut up", "[a] Fine, I'm quiet... but I'm a little hurt."),
+]
+EXAMPLE_TURNS = [t for q, a in EXAMPLES for t in ({"role": "user", "content": q}, {"role": "assistant", "content": a})]
+CLI_PROMPT = PERSONA + "\n\nExamples:\n" + "\n".join(f"Them: {q}\nYou: {a}" for q, a in EXAMPLES)
 API_MINDS = ("claude-api", "groq", "ollama")
 
-PET = {  # the "pet" mind: no AI, a few canned answers
-    "h": ["باهي برشا! زيدني حكيلي.", "يعيشك يا صاحبي!", "مرحبا بيك ديما!"],
-    "?": ["شنوة؟ عاود قولي.", "ممم... ما فهمتش، أما نحبك."],
-    "l": ["حتى أنا نحبك برشا!"],
+PET = {  # the "pet" mind: no AI, a few canned answers, in the language of the message
+    "en": [("h", "Yay! Tell me more."), ("h", "You're the best!"), ("?", "Hmm? Say that again."), ("l", "I love you too!")],
+    "fr": [("h", "Youpi ! Raconte-moi encore."), ("h", "Tu es le meilleur !"), ("?", "Hein ? Redis-moi ça."), ("l", "Moi aussi je t'aime !")],
+    "ar": [("h", "رائع! أخبرني المزيد."), ("h", "أنت الأفضل!"), ("?", "ماذا؟ أعد من فضلك."), ("l", "وأنا أيضا أحبك!")],
 }
+
+_FR = set("je j' tu il elle on nous vous ils est suis es sont pas ne le la les un une des et oui non merci bonjour salut "
+          "c'est très avec pour mais ton ta tes mon ma mes qui que quoi comment ça de du au aux en moi toi bien".split())
+_EN = set("i you he she we they is am are not the a an and yes no thanks thank hello hi it's very with for but your "
+          "my who what how to of in on do does me it this that good".split())
+
+
+def one_language(said, asked):
+    """Keep an answer in one language: drop sentences in the other script when the answer mixes
+    Arabic and Latin letters (seen: an Arabic answer ending in an English sentence after an English chat)."""
+    parts = re.split(r"(?<=[.!?؟])\s+", said)
+    if len(parts) < 2:
+        return said
+    arabic = [bool(re.search("[؀-ۿ]", p)) for p in parts]
+    if all(arabic) or not any(arabic):
+        return said
+    keep = detect_lang(asked) == "ar"           # they wrote Arabic letters: keep the Arabic sentences
+    kept = [p for p, a in zip(parts, arabic) if a == keep]
+    return " ".join(kept) or said
+
+
+def detect_lang(text):
+    """'ar' for Arabic letters, else 'fr' or 'en' by common words and accents."""
+    if re.search("[\u0600-\u06FF]", text or ""):
+        return "ar"
+    words = re.findall(r"[a-zà-ÿœ']+", (text or "").lower())
+    fr = sum(w in _FR for w in words) + 2 * len(re.findall("[éèêàçùûîôœ]", (text or "").lower()))
+    en = sum(w in _EN for w in words)
+    return "fr" if fr > en else "en"
 
 
 def load_settings():
@@ -214,7 +254,6 @@ class Mind:
         self.history = []                # [{"role": "user"|"assistant", "content": ...}], API minds
         self.lock = threading.Lock()
         self.active, self.last_seconds, self.down, self.failed = None, 0.0, {}, []
-        self.rewrote = 0                 # answers sent back for a Derja rewrite
         self.cli = None
         self.reload()
 
@@ -265,7 +304,7 @@ class Mind:
 
     def info(self):
         """For the chat page: no keys, only whether they are set."""
-        return {"choice": self.choice, "active": self.describe(), "label": LABELS.get(self.describe(), self.describe()),
+        return {"choice": self.choice, "language": self.language(), "active": self.describe(), "label": LABELS.get(self.describe(), self.describe()),
                 "available": self.available(), "labels": LABELS,
                 "groq_model": self.cfg.get("groq_model", GROQ_MODELS[0]),
                 "has_groq_key": bool(self.key("groq_key", "GROQ_API_KEY")),
@@ -281,8 +320,15 @@ class Mind:
             except (MindError, OSError):
                 pass
 
+    def language(self):
+        lang = self.cfg.get("language", "auto")
+        return lang if lang in LANGUAGE_RULE else "auto"
+
+    def system(self):
+        return PERSONA + "\n" + LANGUAGE_RULE[self.language()] + "\n" + time_note()
+
     def reply(self, text):
-        """-> (mood, derja_text, mind_used). Falls through the minds on errors."""
+        """-> (mood, text, mind_used). Falls through the minds on errors."""
         with self.lock:
             errors, self.failed = [], []
             for m in self.order():
@@ -290,9 +336,8 @@ class Mind:
                     t0 = time.time()
                     raw = self._ask(m, text)
                     mood, said = parse(raw)
-                    said = dj.fix(said, mood)
-                    if dj.markers(said) and m in API_MINDS:   # still sounds like MSA: one rewrite
-                        said = self._derja(m, said)
+                    if self.language() == "auto":
+                        said = one_language(said, text)
                     self.active = m
                     if m != "claude":    # the CLI session keeps its own history
                         self.history += [{"role": "user", "content": text},
@@ -307,25 +352,13 @@ class Mind:
             raise MindError("; ".join(errors) or "no mind available")
 
     def _ask(self, m, text):
-        if m == "claude":
-            return self.cli.ask(time_note() + " " + text)
+        if m == "claude":            # its system prompt is fixed at start: the language rule rides along
+            return self.cli.ask(f"{time_note()} ({LANGUAGE_RULE[self.language()]}) {text}")
         if m == "pet":
-            mood = random.choice(list(PET))
-            return f"[{mood}] {random.choice(PET[mood])}"
-        return self._call(m, PERSONA + "\n" + time_note(), EXAMPLE_TURNS + self.history + [{"role": "user", "content": text}])
-
-    def _derja(self, m, said):
-        """Ask the same mind to put an answer that still sounds like MSA into Derja;
-        keep the original if the rewrite fails or is no better."""
-        try:
-            _, better = parse(self._call(m, dj.REWRITE, [{"role": "user", "content": said}]))
-        except (MindError, KeyError, IndexError, TypeError, AttributeError):
-            return said
-        better = dj.fix(better)
-        if better and len(dj.markers(better)) < len(dj.markers(said)):
-            self.rewrote += 1
-            return better
-        return said
+            lang = self.language() if self.language() != "auto" else detect_lang(text)
+            mood, said = random.choice(PET[lang])
+            return f"[{mood}] {said}"
+        return self._call(m, self.system(), EXAMPLE_TURNS + self.history + [{"role": "user", "content": text}])
 
     def _call(self, m, system, msgs):
         if m == "claude-api":
@@ -381,17 +414,42 @@ class Mind:
         self.cli.close()
 
 
+EVAL = [("How are you today?", "en"), ("Tell me a joke", "en"), ("I failed my exam", "en"), ("What's 12 times 7?", "en"),
+        ("Salut, ça va ?", "fr"), ("Raconte-moi une blague", "fr"), ("Je suis fatigué", "fr"), ("Tu aimes le football ?", "fr"),
+        ("كيف حالك اليوم؟", "ar"), ("احك لي نكتة", "ar"), ("ما هو لونك المفضل؟", "ar"), ("aslema, chnahwelek?", "ar")]
+
+
+def evaluate(mind_name=None, gap=8.0):
+    """12 messages (English, French, Arabic, Arabizi), a fresh mind each: is the answer in the right language?"""
+    right, secs = 0, []
+    for i, (msg, want) in enumerate(EVAL):
+        if i:
+            time.sleep(max(0.0, gap - secs[-1]))    # stay inside Groq's free 8000 tokens a minute
+        mind = Mind(mind_name)
+        t0 = time.time()
+        mood, said, used = mind.reply(msg)
+        secs.append(time.time() - t0)
+        got = detect_lang(said)
+        right += got == want
+        print(f"{secs[-1]:4.1f}s {'ok ' if got == want else 'BAD'} [{mood}] {said}   ({msg}; wanted {want}, got {got}, {used})", flush=True)
+        mind.close()
+    print(f"\n{right}/{len(EVAL)} in the right language, {sum(secs) / len(secs):.1f} s average")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("text", nargs="?")
     ap.add_argument("--mind", choices=("auto",) + MINDS)
     ap.add_argument("--chat", action="store_true", help="keep talking in the console")
+    ap.add_argument("--eval", action="store_true", help="check he answers in the language he is spoken to")
     args = ap.parse_args()
     for f in (sys.stdout, sys.stdin):
         try:
             f.reconfigure(encoding="utf-8")
         except (AttributeError, ValueError):
             pass
+    if args.eval:
+        return evaluate(args.mind)
     mind = Mind(args.mind)
     print(f"mind: {mind.describe()} (order: {', '.join(mind.order())})", flush=True)
     try:

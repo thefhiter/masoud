@@ -38,7 +38,7 @@
 namespace audio {
 
 const uint16_t RATE = 8000;
-const uint16_t RING = 256;              // 32 ms of speech; the face needs the rest of the Uno's 2 KB
+const uint16_t RING = 512;              // 64 ms of speech: rides out a PC hiccup (256 = 32 ms gave 25 ms gaps)
 const uint8_t CHUNK = 32;
 const uint8_t CREDIT = 0x06;
 const uint8_t START = 0x01;             // byte that switches serial into stream mode

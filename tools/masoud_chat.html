@@ -183,6 +183,10 @@ dialog[open] { animation: pop 220ms var(--ease); }
 dialog form { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 dialog h2 { margin: 0; font: 800 24px/1.1 var(--display); }
 dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
+.langs { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.langs legend { font: 700 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin-bottom: 8px; }
+.langs .seg { flex-wrap: wrap; }
+.langs small { color: var(--mute); font-size: 12.5px; }
 .minds { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; margin: 0; }
 .minds legend { font: 700 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin-bottom: 8px; }
 .mind { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--hair); background: var(--glass); cursor: pointer; transition: border-color 160ms, background 160ms; }
@@ -235,7 +239,7 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
 <header>
   <div class="brand">
     <img src="/brand/masoud-wordmark-white.svg" alt="masoud" width="95" height="26">
-    <span>Kol nhar, mas3oud</span>
+    <span>Your desk buddy</span>
   </div>
   <span class="pill" id="link" role="status"><span class="dot"></span><span id="link-text">Looking for Masoud…</span></span>
   <button class="pill" id="mind-open" type="button" aria-haspopup="dialog">
@@ -263,13 +267,13 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
   <section class="chat" aria-label="Chat">
     <div class="log" id="log" role="log" aria-live="polite" aria-relevant="additions">
       <div class="empty" id="empty">
-        <h1>Aslema! <em>Talk to me.</em></h1>
-        <p>Write in Derja, French or English. Masoud answers in Derja, out loud, with the face to match.</p>
+        <h1>Hello! <em>Talk to me.</em></h1>
+        <p>Write in English, French or Arabic. Masoud answers in your language, out loud, with the face to match.</p>
         <div class="suggest" id="suggest">
-          <button type="button" dir="rtl">شنوة أحوالك اليوم؟</button>
           <button type="button">Tell me a joke</button>
-          <button type="button">Chnoua l weqt tawa?</button>
-          <button type="button">Je suis fatigué…</button>
+          <button type="button">Salut, ça va ?</button>
+          <button type="button" dir="rtl" lang="ar">كيف حالك اليوم؟</button>
+          <button type="button">What's 12 times 7?</button>
         </div>
       </div>
     </div>
@@ -281,7 +285,7 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
       </div>
       <div class="row">
         <label class="sr" for="text">Message to Masoud</label>
-        <textarea id="text" rows="1" dir="auto" placeholder="Write to Masoud…" maxlength="500"></textarea>
+        <textarea id="text" rows="1" dir="auto" placeholder="Write to Masoud in English, French or Arabic…" maxlength="500"></textarea>
         <button class="send" id="send" type="submit"><span>Send</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button>
       </div>
       <p class="hint"><kbd>Enter</kbd> sends · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line · start with <kbd>!</kbd> to make him say your words exactly</p>
@@ -292,6 +296,16 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
 <dialog id="mind" aria-labelledby="mind-title">
   <form method="dialog" id="mind-form">
     <h2 id="mind-title">His mind</h2>
+    <fieldset class="langs">
+      <legend>Language</legend>
+      <div class="seg" id="langs">
+        <label><input type="radio" name="lang" value="auto"><span>Auto</span></label>
+        <label><input type="radio" name="lang" value="en"><span>English</span></label>
+        <label><input type="radio" name="lang" value="fr"><span>Français</span></label>
+        <label><input type="radio" name="lang" value="ar"><span lang="ar">العربية</span></label>
+      </div>
+      <small>Auto: he answers in the language you write in.</small>
+    </fieldset>
     <p class="lead">Who thinks for Masoud. If the one you pick fails, the next one that works answers, so he never goes quiet. Pet is the only one with no backup: no AI, on purpose.</p>
     <fieldset class="minds" id="minds"><legend>Choose</legend></fieldset>
     <div class="keys">
@@ -513,7 +527,7 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
 
   // ---------- the page's Masoud mirrors the real one ----------
   var DESC = { 'claude-api': 'Claude with your own API key. About a second per answer.',
-    'groq': 'Groq, free with a key. Fastest, and good Derja.',
+    'groq': 'Groq, free with a key. The fastest.',
     'claude': 'The Claude Code CLI on this PC, no key needed. Sign it in once with: claude auth login. A few seconds per answer.',
     'ollama': 'A model running on this PC with Ollama. Private and free.',
     'pet': 'No AI: a few cute canned answers. Good for kids.' };
@@ -563,15 +577,15 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
 
   // ---------- mood buttons ----------
   var root = document.documentElement, moodBox = document.getElementById('moods'), moodButtons = [];
-  var SHORT = ['Labes', 'Mrigel!', 'Mghboun', 'Harissa!', 'Ya mimti!', 'Na3sen', 'Mghrom', 'Chkoun?!', 'Dawkha!'];
-  var MEAN = ['calm', 'happy', 'sad', 'angry', 'surprised', 'sleepy', 'in love', 'suspicious', 'dizzy'];
+  var SHORT = ['Calm', 'Happy', 'Sad', 'Angry', 'Surprised', 'Sleepy', 'In love', 'Suspicious', 'Dizzy'];
+  var MEAN = SHORT.map(function (m) { return m.toLowerCase(); });
   SHORT.forEach(function (name, i) {
     var b = document.createElement('button');
     b.type = 'button'; b.title = MEAN[i]; b.setAttribute('aria-pressed', 'false');
     b.style.setProperty('--c', GLOW[i]);
     b.innerHTML = '<i style="background:' + GLOW[i] + '"></i>';
     b.appendChild(document.createTextNode(name));
-    b.setAttribute('aria-label', name + ' (' + MEAN[i] + ')');
+    b.setAttribute('aria-label', name);
     b.addEventListener('click', function () { setMood(MOOD_KEYS[i]); post('/api/mood', { key: MOOD_KEYS[i] }); });
     moodBox.appendChild(b); moodButtons.push(b);
   });
@@ -738,12 +752,15 @@ dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
     document.getElementById('groq-key').placeholder = info.has_groq_key ? 'saved (type to replace)' : 'gsk_…';
     document.getElementById('anthropic-key').placeholder = info.has_anthropic_key ? 'saved (type to replace)' : 'sk-ant-…';
     document.getElementById('mind-name').textContent = info.label;
+    var lang = document.querySelector('#langs input[value="' + (info.language || 'auto') + '"]');
+    if (lang) lang.checked = true;
   }
   function loadMind() { return fetch('/api/mind', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(fillMind); }
   document.getElementById('mind-open').addEventListener('click', function () { loadMind().catch(function () {}); dlg.showModal(); });
   document.getElementById('mind-save').addEventListener('click', function () {
     var picked = box.querySelector('input:checked');
-    var body = { mind: picked ? picked.value : 'auto', groq_key: document.getElementById('groq-key').value, anthropic_key: document.getElementById('anthropic-key').value };
+    var lang = document.querySelector('#langs input:checked');
+    var body = { mind: picked ? picked.value : 'auto', language: lang ? lang.value : 'auto', groq_key: document.getElementById('groq-key').value, anthropic_key: document.getElementById('anthropic-key').value };
     post('/api/mind', body).then(function (info) {
       fillMind(info); document.getElementById('groq-key').value = ''; document.getElementById('anthropic-key').value = '';
       dlg.close(); toast('His mind: ' + info.label);
