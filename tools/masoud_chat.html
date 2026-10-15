@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat with Masoud</title>
+<meta name="description" content="Type to Masoud: his mind answers in Tunisian Derja, his face shows the mood and he says it out loud.">
+<link rel="icon" href="/brand/masoud-app-icon-night.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Readex+Pro:wght@300;400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #070A12;
+  --bg-2: #0A0E17;
+  --panel: #0D1220;
+  --glass: rgba(255, 255, 255, .045);
+  --glass-2: rgba(255, 255, 255, .075);
+  --hair: rgba(255, 255, 255, .09);
+  --hair-2: rgba(255, 255, 255, .16);
+  --text: #F4F5F1;
+  --soft: #A3ACBD;
+  --mute: #8B94A7;
+  --yellow: #FFC61A;
+  --cyan: #00D7FF;
+  --harissa: #FF4A2E;
+  --steel: #4C5566;
+  --mood: #00D7FF;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --display: "Rubik", "Segoe UI", system-ui, sans-serif;
+  --body: "Readex Pro", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 400 16px/1.6 var(--body);
+  display: grid; grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr); min-height: 100dvh; overflow: hidden;
+}
+::selection { background: var(--yellow); color: #0A0E17; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 10px; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* the room light follows his mood */
+.ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.ambient i { position: absolute; border-radius: 50%; filter: blur(90px); transition: background 900ms var(--ease); }
+.ambient i:nth-child(1) { width: 60vmax; height: 60vmax; left: -22vmax; top: -26vmax; background: var(--mood); opacity: .13; }
+.ambient i:nth-child(2) { width: 40vmax; height: 40vmax; right: -16vmax; bottom: -20vmax; background: var(--yellow); opacity: .06; }
+
+header {
+  position: relative; z-index: 2; display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; border-bottom: 1px solid var(--hair);
+  background: linear-gradient(to bottom, rgba(7,10,18,.92), rgba(7,10,18,.7));
+  backdrop-filter: blur(12px);
+}
+header .brand { display: flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; }
+header .brand img { height: 26px; width: auto; display: block; }
+header .brand span { font: 500 13px/1 var(--display); color: var(--mute); letter-spacing: .02em; white-space: nowrap; }
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px;
+  border-radius: 999px; border: 1px solid var(--hair); background: var(--glass);
+  font: 500 13.5px/1 var(--display); color: var(--soft); white-space: nowrap;
+}
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--steel); flex: none; }
+.pill.on .dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+.pill.off .dot { background: var(--harissa); }
+button.pill { min-height: 44px; height: 44px; color: var(--text); transition: background 160ms, border-color 160ms; }
+button.pill:hover { background: var(--glass-2); border-color: var(--hair-2); }
+button.pill svg { width: 16px; height: 16px; flex: none; }
+
+main {
+  position: relative; z-index: 1; min-height: 0;
+  display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 0;
+}
+
+/* ---------- his side ---------- */
+.buddy { padding: 28px 24px; display: flex; flex-direction: column; align-items: center; gap: 18px; border-right: 1px solid var(--hair); overflow-y: auto; }
+.head {
+  width: 100%; max-width: 320px; aspect-ratio: 108 / 92; border-radius: 30% / 34%;
+  background: linear-gradient(160deg, #1A2233, #0A0E17 60%); padding: 9% 8%;
+  border: 1px solid var(--hair-2);
+  box-shadow: 0 30px 80px -30px color-mix(in srgb, var(--mood) 55%, transparent), inset 0 1px 0 rgba(255,255,255,.08);
+  transition: box-shadow 900ms var(--ease); position: relative;
+}
+.head .screen { width: 100%; height: 100%; border-radius: 14px; background: #000; overflow: hidden; display: grid; place-items: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
+.head canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.head .spark { position: absolute; right: -4%; top: -6%; width: 18%; color: var(--yellow); filter: drop-shadow(0 0 12px rgba(255,198,26,.6)); }
+.mood-now { text-align: center; }
+.mood-now b { display: block; font: 800 28px/1.1 var(--display); letter-spacing: -.01em; color: var(--mood); transition: color 600ms var(--ease); }
+.mood-now span { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 14px; color: var(--soft); min-height: 22px; }
+.bars { display: inline-flex; gap: 3px; align-items: center; height: 14px; }
+.bars i { width: 3px; height: 4px; border-radius: 2px; background: var(--mood); }
+.talking .bars i { animation: bar 520ms ease-in-out infinite alternate; }
+.talking .bars i:nth-child(2) { animation-delay: -180ms; }
+.talking .bars i:nth-child(3) { animation-delay: -360ms; }
+@keyframes bar { to { height: 14px; } }
+.poke { width: 100%; max-width: 320px; }
+.poke h2 { font: 700 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin: 6px 0 10px; }
+.moods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.moods button {
+  min-height: 44px; padding: 6px 8px; border-radius: 12px; border: 1px solid var(--hair); background: var(--glass);
+  font: 500 13.5px/1.15 var(--display); display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: background 160ms, border-color 160ms, transform 120ms;
+}
+.moods button i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.moods button:hover { background: var(--glass-2); border-color: var(--hair-2); }
+.moods button:active { transform: scale(.96); }
+.moods button[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+
+/* ---------- the chat ---------- */
+.chat { display: flex; flex-direction: column; min-height: 0; }
+.log { flex: 1; overflow-y: auto; padding: 28px max(clamp(16px, 4vw, 48px), calc((100% - 880px) / 2)) 12px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: auto; }
+.empty { margin: auto; max-width: 460px; text-align: center; padding: 24px 0; }
+.empty h1 { font: 800 clamp(28px, 4vw, 40px)/1.05 var(--display); margin: 0 0 10px; letter-spacing: -.02em; }
+.empty h1 em { font-style: normal; color: var(--yellow); }
+.empty p { color: var(--soft); margin: 0 0 20px; }
+.suggest { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.suggest button { min-height: 44px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--hair-2); background: var(--glass); font-size: 15px; transition: background 160ms, border-color 160ms; }
+.suggest button:hover { background: var(--glass-2); border-color: var(--cyan); }
+
+.msg { max-width: min(560px, 86%); display: flex; flex-direction: column; gap: 5px; animation: rise 260ms var(--ease) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+.msg .bubble { padding: 11px 16px; border-radius: 18px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.msg .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12.5px; color: var(--mute); padding: 0 6px; }
+.msg.you { align-self: flex-end; align-items: flex-end; }
+.msg.you .bubble { background: var(--text); color: #0A0E17; border-bottom-right-radius: 6px; }
+.msg.you.say .bubble { background: var(--yellow); }
+.msg.him { align-self: flex-start; }
+.msg.him .bubble { background: var(--panel); border: 1px solid var(--hair); border-bottom-left-radius: 6px; font-size: 18px; line-height: 1.7; box-shadow: inset 3px 0 0 var(--c, var(--cyan)); }
+.msg.him .bubble[dir="rtl"] { box-shadow: inset -3px 0 0 var(--c, var(--cyan)); text-align: right; }
+.msg.auto .bubble { background: transparent; border-style: dashed; font-size: 16px; color: var(--soft); }
+.msg.error .bubble { border-color: color-mix(in srgb, var(--harissa) 60%, transparent); --c: var(--harissa); }
+.msg.error .meta { color: #FF8A73; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font: 500 12.5px/1 var(--display); color: var(--soft); }
+.chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.sys { align-self: center; font-size: 13px; color: var(--mute); padding: 4px 12px; border: 1px solid var(--hair); border-radius: 999px; }
+.typing .bubble { display: inline-flex; gap: 6px; align-items: center; padding: 16px 18px; }
+.typing .bubble i { width: 7px; height: 7px; border-radius: 50%; background: var(--soft); animation: blink 1s infinite; }
+.typing .bubble i:nth-child(2) { animation-delay: .15s; }
+.typing .bubble i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+form.composer { padding: 12px max(clamp(16px, 4vw, 48px), calc((100% - 880px) / 2)) 18px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--hair); background: linear-gradient(to top, rgba(7,10,18,.96), rgba(7,10,18,.75)); }
+.row { display: flex; gap: 10px; align-items: flex-end; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--hair); align-self: flex-start; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; font: 500 13.5px/1 var(--display); color: var(--soft); transition: background 160ms, color 160ms; }
+.seg input:checked + span { background: var(--glass-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--hair-2); }
+.seg input:focus-visible + span { outline: 2px solid var(--cyan); outline-offset: 1px; }
+textarea {
+  flex: 1; resize: none; min-height: 52px; max-height: 180px; padding: 14px 16px; border-radius: 16px;
+  border: 1px solid var(--hair-2); background: var(--bg-2); line-height: 1.5; font-size: 16px;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+textarea::placeholder { color: var(--mute); }
+textarea:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,215,255,.18); }
+.send {
+  min-height: 52px; min-width: 52px; padding: 0 20px; border-radius: 16px; border: 0;
+  background: var(--yellow); color: #0A0E17; font: 800 16px/1 var(--display);
+  display: inline-flex; align-items: center; gap: 8px; transition: transform 120ms, filter 160ms, opacity 160ms;
+  box-shadow: 0 10px 34px -12px rgba(255,198,26,.6);
+}
+.send:hover { filter: brightness(1.06); }
+.send:active { transform: scale(.97); }
+.send[disabled] { opacity: .45; cursor: progress; }
+.send svg { width: 18px; height: 18px; }
+.hint { font-size: 12.5px; color: var(--mute); margin: 0; }
+.hint kbd { font: 500 11.5px/1 var(--display); padding: 3px 6px; border-radius: 6px; border: 1px solid var(--hair-2); color: var(--soft); }
+
+/* ---------- mind settings ---------- */
+dialog {
+  width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); padding: 0; border-radius: 22px;
+  border: 1px solid var(--hair-2); background: var(--bg-2); color: var(--text);
+  box-shadow: 0 40px 120px -20px rgba(0,0,0,.8);
+}
+dialog::backdrop { background: rgba(3,5,10,.7); backdrop-filter: blur(4px); }
+dialog[open] { animation: pop 220ms var(--ease); }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+dialog form { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+dialog h2 { margin: 0; font: 800 24px/1.1 var(--display); }
+dialog p.lead { margin: -8px 0 0; color: var(--soft); font-size: 14.5px; }
+.minds { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; margin: 0; }
+.minds legend { font: 700 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin-bottom: 8px; }
+.mind { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--hair); background: var(--glass); cursor: pointer; transition: border-color 160ms, background 160ms; }
+.mind:hover { border-color: var(--hair-2); }
+.mind:has(input:checked) { border-color: var(--cyan); background: rgba(0,215,255,.06); }
+.mind input { accent-color: var(--cyan); width: 18px; height: 18px; margin: 0; grid-row: span 2; }
+.mind b { font: 700 15px/1.2 var(--display); }
+.mind small { grid-column: 2; color: var(--soft); font-size: 13px; line-height: 1.4; }
+.mind .tag { grid-row: 1; grid-column: 3; font: 500 12px/1 var(--display); padding: 5px 9px; border-radius: 999px; border: 1px solid var(--hair); color: var(--mute); white-space: nowrap; }
+.mind .tag.ready { color: var(--cyan); border-color: rgba(0,215,255,.35); }
+.keys { display: grid; gap: 12px; }
+.field label { display: block; font: 500 13.5px/1.2 var(--display); margin-bottom: 6px; }
+.field input { width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--hair-2); background: var(--bg); font-size: 15px; }
+.field input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,215,255,.18); }
+.field small { display: block; color: var(--mute); font-size: 12.5px; margin-top: 5px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center; }
+.actions .ghost { margin-right: auto; }
+.btn { min-height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid var(--hair-2); background: var(--glass); font: 500 15px/1 var(--display); transition: background 160ms, border-color 160ms; }
+.btn:hover { background: var(--glass-2); }
+.btn.primary { background: var(--yellow); border-color: var(--yellow); color: #0A0E17; font-weight: 800; }
+.btn.ghost { border-color: transparent; color: var(--soft); }
+.btn.ghost:hover { color: var(--text); }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 9; padding: 10px 16px; border-radius: 12px; background: var(--text); color: #0A0E17; font: 500 14px/1.3 var(--display); box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); opacity: 0; pointer-events: none; transition: opacity 200ms; }
+.toast.show { opacity: 1; }
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  main { grid-template-columns: 1fr; }
+  .buddy { border-right: 0; border-bottom: 1px solid var(--hair); padding: 18px 16px; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 14px 20px; overflow: visible; }
+  .head { max-width: 200px; }
+  .poke { max-width: 420px; }
+  .chat { min-height: 70dvh; }
+  .log { padding-inline: 16px; }
+  form.composer { padding-inline: 16px; position: sticky; bottom: 0; background: var(--bg); }
+  header .brand span { display: none; }
+}
+@media (max-width: 520px) {
+  header { padding: 10px 16px; gap: 8px; }
+  .pill .long { display: none; }
+  .msg { max-width: 92%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="ambient" aria-hidden="true"><i></i><i></i></div>
+
+<header>
+  <div class="brand">
+    <img src="/brand/masoud-wordmark-white.svg" alt="masoud" width="95" height="26">
+    <span>Kol nhar, mas3oud</span>
+  </div>
+  <span class="pill" id="link" role="status"><span class="dot"></span><span id="link-text">Looking for Masoud…</span></span>
+  <button class="pill" id="mind-open" type="button" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6c0 2.2 1.2 3.7 2.5 4.9.8.7 1.5 1.6 1.5 2.6V18h4v-1.5c0-1 .7-1.9 1.5-2.6C16.8 12.7 18 11.2 18 9a6 6 0 0 0-6-6Z"/><path d="M10 21h4"/></svg>
+    <span><span class="long">Mind: </span><span id="mind-name">…</span></span>
+  </button>
+</header>
+
+<main>
+  <aside class="buddy" aria-label="Masoud">
+    <div class="head">
+      <div class="screen"><canvas id="face" width="160" height="128" role="img" aria-label="Masoud's face"></canvas></div>
+      <svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/></svg>
+    </div>
+    <div class="mood-now" aria-live="polite">
+      <b id="mood-name">Labes</b>
+      <span id="doing"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><span id="doing-text">Listening</span></span>
+    </div>
+    <div class="poke">
+      <h2 id="poke-title">Poke his face</h2>
+      <div class="moods" id="moods" role="group" aria-labelledby="poke-title"></div>
+    </div>
+  </aside>
+
+  <section class="chat" aria-label="Chat">
+    <div class="log" id="log" role="log" aria-live="polite" aria-relevant="additions">
+      <div class="empty" id="empty">
+        <h1>Aslema! <em>Talk to me.</em></h1>
+        <p>Write in Derja, French or English. Masoud answers in Derja, out loud, with the face to match.</p>
+        <div class="suggest" id="suggest">
+          <button type="button" dir="rtl">شنوة أحوالك اليوم؟</button>
+          <button type="button">Tell me a joke</button>
+          <button type="button">Chnoua l weqt tawa?</button>
+          <button type="button">Je suis fatigué…</button>
+        </div>
+      </div>
+    </div>
+
+    <form class="composer" id="composer" autocomplete="off">
+      <div class="seg" role="radiogroup" aria-label="What he does with your message">
+        <label><input type="radio" name="mode" value="chat" checked><span>He answers</span></label>
+        <label><input type="radio" name="mode" value="say"><span>He says it</span></label>
+      </div>
+      <div class="row">
+        <label class="sr" for="text">Message to Masoud</label>
+        <textarea id="text" rows="1" dir="auto" placeholder="Write to Masoud…" maxlength="500"></textarea>
+        <button class="send" id="send" type="submit"><span>Send</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button>
+      </div>
+      <p class="hint"><kbd>Enter</kbd> sends · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line · start with <kbd>!</kbd> to make him say your words exactly</p>
+    </form>
+  </section>
+</main>
+
+<dialog id="mind" aria-labelledby="mind-title">
+  <form method="dialog" id="mind-form">
+    <h2 id="mind-title">His mind</h2>
+    <p class="lead">Who thinks for Masoud. Auto picks the best one that works on this PC and moves to the next if it fails.</p>
+    <fieldset class="minds" id="minds"><legend>Choose</legend></fieldset>
+    <div class="keys">
+      <div class="field">
+        <label for="groq-key">Groq key</label>
+        <input id="groq-key" type="password" autocomplete="off" spellcheck="false" placeholder="gsk_…">
+        <small id="groq-note">Free at console.groq.com. Kept only on this PC.</small>
+      </div>
+      <div class="field">
+        <label for="anthropic-key">Claude API key</label>
+        <input id="anthropic-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+        <small id="anthropic-note">From console.anthropic.com. Kept only on this PC.</small>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" type="button" id="forget">Forget our chat</button>
+      <button class="btn" value="cancel" formnovalidate>Close</button>
+      <button class="btn primary" type="button" id="mind-save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  // ---------- Masoud's face: port of firmware/masoud_uno/emo_face.h ----------
+  var W = 160, H = 128;
+  var KEYS = ['cx', 'cy', 'w', 'h', 'r', 'lidIn', 'lidOut', 'lidFlat', 'happy', 'heart', 'dizzy', 'blush', 'red', 'green', 'blue'];
+  var GLOW_PX = 4, HALO_PX = 2;   // glow ring widths (GLOW below is the mood color list)
+  var MOODS = ['Labes', 'Mrigel!', 'Mghboun', 'Harissa!', 'Ya mimti!', 'Na3sen', 'Mghrom', 'Chkoun?!', 'Dawkha!'];
+  var MOOD_KEYS = 'nhsauzl?d';
+  var GLOW = ['#00D7FF', '#00D7FF', '#2882FF', '#FF4A2E', '#00D7FF', '#008CAF', '#FF3C96', '#00D7FF', '#FFC61A'];
+  function moodEye(m, side) {
+    var e = { cx: side === 0 ? 48 : 112, cy: 62, w: 44, h: 52, r: 12, lidIn: 0, lidOut: 0, lidFlat: 0,
+      happy: 0, heart: 0, dizzy: 0, blush: 0, red: 0, green: 215, blue: 255 };
+    var o = [null, { h: 42, cy: 58, r: 19, happy: 1, blush: 1 },
+      { w: 42, h: 46, cy: 70, lidOut: 0.42, red: 40, green: 130, blue: 255 },
+      { w: 46, h: 46, lidIn: 0.48, red: 255, green: 45, blue: 25 }, { w: 52, h: 62, r: 18 },
+      { cy: 66, lidFlat: 0.62, red: 0, green: 140, blue: 175 }, { heart: 1, red: 255, green: 60, blue: 150 },
+      { lidFlat: side === 0 ? 0.52 : 0.18 }, { w: 36, h: 36, r: 18, dizzy: 1 }][m];
+    if (o) for (var k in o) e[k] = o[k];
+    return e;
+  }
+  function px(v) { return Math.floor(v + 0.5); }
+  function c565(r, g, b) {
+    r = Math.max(0, Math.min(255, r | 0)) & 0xF8; g = Math.max(0, Math.min(255, g | 0)) & 0xFC; b = Math.max(0, Math.min(255, b | 0)) & 0xF8;
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  function Face() {
+    this.eye = [moodEye(0, 0), moodEye(0, 1)]; this.eye[0].h = 3; this.eye[1].h = 3;
+    this.mood = 0; this.time = 0; this.lookX = this.lookY = this.lookTX = this.lookTY = 0; this.lookHold = 0;
+    this.blinkT = -1; this.blinkEye = -1; this.manualUntil = 0; this.dizzyUntil = 0;
+    this.nextBlink = 6; this.nextLook = 6; this.nextMood = 12; this.moodUntil = 0; this.zPhase = 0; this.rng = 0x2545F491;
+  }
+  var F = Face.prototype;
+  F.rnd = function () { var x = this.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.rng = x >>> 0; return this.rng; };
+  F.rndf = function (a, b) { return a + (b - a) * (this.rnd() % 1000) / 1000; };
+  F.setMood = function (m) { this.mood = m; if (m === 5) this.zPhase = 0; };
+  F.look = function (x, y) { this.lookTX = x; this.lookTY = y; };
+  F.blink = function () { if (this.blinkT < 0) { this.blinkT = 0; this.blinkEye = -1; } };
+  F.shake = function () { this.setMood(8); this.dizzyUntil = this.time + 3; };
+  F.command = function (c) {
+    if (this.time < 5) this.time = 5;
+    var i = MOOD_KEYS.indexOf(c); if (i < 0) return;
+    if (i === 8) this.shake(); else this.setMood(i);
+    if (i === 7) this.look(1, 0); else if (i === 2 || i === 5) this.look(0, 0.5);
+    this.manualUntil = this.time + 15;
+  };
+  F.intro = function () {
+    var t = this.time; if (t > 5) return;
+    if (t > 1.3 && t < 1.9) this.look(-0.9, 0); else if (t > 1.9 && t < 2.5) this.look(0.9, 0); else if (t > 2.5 && t < 2.7) this.look(0, 0);
+    if (t > 2.8 && t < 3.0) this.setMood(1);
+    if (t > 4.6) this.setMood(0);
+  };
+  F.behave = function () {
+    var t = this.time;
+    if (t > this.nextBlink) { this.blink(); this.nextBlink = t + (this.rnd() % 5 === 0 ? 0.35 : this.rndf(1.8, 5)); }
+    if (t < this.manualUntil) return;
+    if (t > this.nextLook && t > this.lookHold && this.mood !== 5) {
+      var s = [[0, 0], [0, 0], [-1, 0], [1, 0], [-0.7, -0.8], [0.7, -0.8], [-0.6, 0.7], [0.6, 0.7], [0, -1]][this.rnd() % 9];
+      this.look(s[0], s[1]); this.nextLook = t + this.rndf(1, 3.5);
+    }
+    if (this.mood !== 0 && this.mood !== 8 && t > this.moodUntil) { this.setMood(0); this.nextMood = t + this.rndf(6, 12); }
+    else if (this.mood === 0 && t > this.nextMood) {
+      this.setMood(1 + this.rnd() % 7);
+      if (this.mood === 7) this.look(this.rnd() % 2 ? 1 : -1, 0);
+      if (this.mood === 2 || this.mood === 5) this.look(0, 0.5);
+      this.moodUntil = t + this.rndf(3.5, 6);
+    }
+  };
+  F.update = function (dt) {
+    this.time += dt; this.intro();
+    if (this.time > 5) this.behave();
+    if (this.mood === 8 && this.time > this.dizzyUntil) this.setMood(0);
+    if (this.blinkT >= 0) { this.blinkT += dt / (this.mood === 5 ? 0.5 : 0.22); if (this.blinkT >= 1) this.blinkT = -1; }
+    var k = 1 - Math.exp(-dt * 11), kl = 1 - Math.exp(-dt * 9);
+    this.lookX += (this.lookTX - this.lookX) * kl; this.lookY += (this.lookTY - this.lookY) * kl;
+    for (var s = 0; s < 2; s++) { var t = moodEye(this.mood, s), e = this.eye[s]; for (var i = 0; i < KEYS.length; i++) e[KEYS[i]] += (t[KEYS[i]] - e[KEYS[i]]) * k; }
+    if (this.mood === 5) this.zPhase += dt * 0.45;
+  };
+  // Glow face: same geometry, colors and layer order as firmware/masoud_uno/emo_face.h.
+  F.prepare = function (s) {
+    var e = this.eye[s], grow = 1 + 0.1 * this.lookX * (s === 1 ? 1 : -1);
+    var w = e.w * grow, h = e.h * grow, cx = e.cx + this.lookX * 18, cy = e.cy + this.lookY * 10;
+    h *= 1 - 0.14 * (this.talk || 0); w *= 1 + 0.04 * (this.talk || 0);   // talking, as on the robot
+    if (this.blinkT >= 0 && (this.blinkEye < 0 || this.blinkEye === s)) h *= 1 - 0.93 * Math.sin(Math.PI * this.blinkT);
+    if (e.happy > 0.01) cy += Math.sin(this.time * 12.57) * 1.5 * e.happy;
+    if (this.mood === 3) cx += Math.sin(this.time * 50) * 0.8;
+    if (e.dizzy > 0.01) { var a0 = this.time * 9 + (s === 0 ? 0 : Math.PI); cx += Math.cos(a0) * 8 * e.dizzy; cy += Math.sin(a0) * 8 * e.dizzy; }
+    var d = { cx: cx, cy: cy, on: true }, b = {};
+    d.glow = c565(e.red * 0.16, e.green * 0.16, e.blue * 0.16);
+    d.halo = c565(e.red * 0.46, e.green * 0.46, e.blue * 0.46);
+    d.glint = c565(e.red + (255 - e.red) * 0.85, e.green + (255 - e.green) * 0.85, e.blue + (255 - e.blue) * 0.85);
+    d.tr = e.red + (255 - e.red) * 0.22; d.tg = e.green + (255 - e.green) * 0.22; d.tb = e.blue + (255 - e.blue) * 0.22;
+    d.dr = e.red * 0.68 - d.tr; d.dg = e.green * 0.68 - d.tg; d.db = e.blue * 0.68 - d.tb;
+    d.glints = e.dizzy < 0.5 && this.mood !== 3;
+    if (e.heart > 0.5) {
+      var size = w * 1.18 * e.heart * (1 + 0.08 * Math.sin(this.time * 10));
+      d.heart = true; d.happyCut = false; d.hs = size;
+      d.gTop = cy - size * 0.40; d.gIh = 1 / (size * 0.85);
+      d.g1x = cx - size * 0.27; d.g1y = cy - size * 0.17; d.g1rx = size * 0.075; d.g1ry = size * 0.06; d.g2r = 0;
+      b.on = e.blush > 0.05; b.cx = cx + (s === 0 ? -1 : 1) * size * 0.34; b.cy = cy + size * 0.30; b.rx = size * 0.2; b.ry = 4;
+    } else {
+      var morph = e.heart * 2; w *= 1 - morph; h *= 1 - morph;
+      d.heart = false; d.w = w; d.h = h; d.r = Math.min(e.r * grow, Math.min(w, h) * 0.5);
+      d.top = cy - h / 2; d.bottom = cy + h / 2; d.xl = cx - w / 2; d.xr = cx + w / 2;
+      var inner = (e.lidIn + e.lidFlat) * h, outer = (e.lidOut + e.lidFlat) * h;
+      d.dL = s === 0 ? outer : inner; d.dR = s === 0 ? inner : outer;
+      d.lidMax = Math.max(d.dL, d.dR);
+      d.lidK = Math.abs(d.dR - d.dL) < 0.01 ? 0 : (d.xr - d.xl) / (d.dR - d.dL);
+      d.ery = h * 0.72; d.erx = w * 0.30; d.ecy = d.bottom + (1 - e.happy) * d.ery;
+      d.happyCut = e.happy > 0.01 && d.ery > GLOW_PX + 1;
+      d.gTop = d.top; d.gIh = h > 1 ? 1 / h : 0;
+      var gx = this.lookX * 2, gy = this.lookY * 1.5;
+      d.g1x = d.xl + w * 0.31 + gx; d.g1y = d.top + h * 0.27 + gy; d.g1rx = w * 0.12; d.g1ry = h * 0.095;
+      d.g2x = d.xl + w * 0.52 + gx; d.g2y = d.top + h * 0.45 + gy; d.g2r = w * 0.05;
+      if (h < 18 || d.g1ry <= 0.5) d.glints = false;
+      if (w < 1 || h < 1) d.on = false;
+      b.on = e.blush > 0.05 && d.on; b.cx = cx + (s === 0 ? -1 : 1) * w * 0.12; b.cy = d.bottom + 8; b.rx = w * 0.30; b.ry = 4;
+    }
+    var a = e.blush * 0.55; b.color = c565(255 * a, 90 * a, 150 * a);
+    return [d, b];
+  };
+  F.zShape = function (i) {
+    var p = ((this.zPhase + i * 0.5) % 1 + 1) % 1, size = 7 + p * 9, a = Math.sin(Math.PI * p), e = this.eye[1];
+    return { s: size, x: 126 + p * 16 + i * 4, y: 40 - p * 32, color: c565(e.red * a, e.green * a, e.blue * a) };
+  };
+  function eyeIv(d, yc, g) {
+    var top = d.top - g, bottom = d.bottom + g;
+    if (yc < top || yc >= bottom) return [];
+    var r = d.r + g, dd = 0;
+    if (yc < top + r) dd = top + r - yc; else if (yc > bottom - r) dd = yc - (bottom - r);
+    var inset = dd > 0 ? r - Math.sqrt(Math.max(0, r * r - dd * dd)) : 0;
+    var x0 = d.xl - g + inset, x1 = d.xr + g - inset, rel = yc - d.top + g;
+    if (rel < d.lidMax) {
+      if (d.lidK === 0) { if (rel < d.dL) return []; }
+      else { var xs = d.xl + (rel - d.dL) * d.lidK; if (d.dR > d.dL) x1 = Math.min(x1, xs); else x0 = Math.max(x0, xs); }
+    }
+    if (x1 <= x0) return [];
+    if (d.happyCut) {
+      var erx = d.erx - g, t = (yc - d.ecy) / (d.ery - g);
+      if (erx > 0 && t > -1 && t < 1) {
+        var hw = erx * Math.sqrt(1 - t * t), a = Math.min(x1, d.cx - hw), b = Math.max(x0, d.cx + hw), out = [];
+        if (a > x0) out.push([x0, a]);
+        if (x1 > b) out.push([b, x1]);
+        return out;
+      }
+    }
+    return [[x0, x1]];
+  }
+  function heartIv(d, yc, g) {
+    var s = d.hs + 2 * g, raw = [], lr = s * 0.27, ly = d.cy - s * 0.13;
+    for (var side = -1; side <= 1; side += 2) {
+      var dy = yc - ly;
+      if (Math.abs(dy) < lr) { var hw = Math.sqrt(lr * lr - dy * dy), lx = d.cx + side * s * 0.25; raw.push([lx - hw, lx + hw]); }
+    }
+    var ty0 = d.cy - s * 0.10, ty1 = d.cy + s * 0.45;
+    if (yc >= ty0 && yc < ty1) { var hw2 = s * 0.5 * (ty1 - yc) / (ty1 - ty0); raw.push([d.cx - hw2, d.cx + hw2]); }
+    raw.sort(function (p, q) { return p[0] - q[0]; });
+    var out = [];
+    raw.forEach(function (r) { var l = out[out.length - 1]; if (l && r[0] <= l[1]) { if (r[1] > l[1]) l[1] = r[1]; } else out.push([r[0], r[1]]); });
+    return out;
+  }
+  function addSeg(out, a, b, color, pri) { var x0 = px(a), x1 = px(b); if (x1 > x0) out.push([x0, x1, color, pri]); }
+  function glintRow(out, yc, gx, gy, rx, ry, body, color) {
+    var t = (yc - gy) / ry; if (t <= -1 || t >= 1) return;
+    var hw = rx * Math.sqrt(1 - t * t);
+    body.forEach(function (iv) { addSeg(out, Math.max(gx - hw, iv[0]), Math.min(gx + hw, iv[1]), color, 5); });
+  }
+  function eyeRow(d, yc, out) {
+    if (!d.on) return;
+    var iv = d.heart ? heartIv(d, yc, GLOW_PX) : eyeIv(d, yc, GLOW_PX);
+    iv.forEach(function (v) { addSeg(out, v[0], v[1], d.glow, 1); });
+    if (!iv.length) return;
+    (d.heart ? heartIv(d, yc, HALO_PX) : eyeIv(d, yc, HALO_PX)).forEach(function (v) { addSeg(out, v[0], v[1], d.halo, 2); });
+    var body = d.heart ? heartIv(d, yc, 0) : eyeIv(d, yc, 0);
+    if (!body.length) return;
+    var t = Math.max(0, Math.min(1, (yc - d.gTop) * d.gIh));
+    var c = c565(d.tr + d.dr * t, d.tg + d.dg * t, d.tb + d.db * t);
+    body.forEach(function (v) { addSeg(out, v[0], v[1], c, 4); });
+    if (d.glints) {
+      glintRow(out, yc, d.g1x, d.g1y, d.g1rx, d.g1ry, body, d.glint);
+      if (d.g2r > 0.5) glintRow(out, yc, d.g2x, d.g2y, d.g2r, d.g2r, body, d.glint);
+    }
+  }
+  function blushRow(b, yc, out) {
+    if (!b.on) return;
+    var t = (yc - b.cy) / b.ry; if (t <= -1 || t >= 1) return;
+    var hw = b.rx * Math.sqrt(1 - t * t); addSeg(out, b.cx - hw, b.cx + hw, b.color, 3);
+  }
+  function zRow(z, yc, out) {
+    var s = z.s, t = Math.max(2, s / 5), ry = yc - z.y;
+    if (ry < 0 || ry >= s) return;
+    if (ry < t || ry >= s - t) return addSeg(out, z.x, z.x + s, z.color, 4);
+    var xd = z.x + (s - t) * (1 - (ry - t) / (s - 2 * t)); addSeg(out, xd, xd + t, z.color, 4);
+  }
+
+  // ---------- the page's Masoud mirrors the real one ----------
+  var DESC = { 'claude-api': 'Claude with your own API key. About a second per answer.',
+    'groq': 'Groq, free with a key. Fastest, and good Derja.',
+    'claude': 'The Claude Code CLI on this PC, no key needed, but it must be signed in (run claude once). A few seconds per answer.',
+    'ollama': 'A model running on this PC with Ollama. Private and free.',
+    'pet': 'No AI: a few cute canned answers. Good for kids.' };
+  var face = new Face();
+  face.time = 5.01;                       // skip the boot intro, just open the eyes
+  face.talk = 0;
+  var thinking = false, speaking = false;
+  Face.prototype.behave = function () {   // blinks and glances; moods come from the robot
+    var t = this.time;
+    if (t > this.nextBlink) { this.blink(); this.nextBlink = t + (this.rnd() % 5 === 0 ? 0.35 : this.rndf(1.8, 5)); }
+    if (thinking) { this.look(0, -1); return; }
+    if (t > this.nextLook && t > this.lookHold && this.mood !== 5) {
+      var s = [[0, 0], [0, 0], [-1, 0], [1, 0], [-0.7, -0.8], [0.7, -0.8], [-0.6, 0.7], [0.6, 0.7], [0, 0]][this.rnd() % 9];
+      this.look(s[0] * 0.7, s[1] * 0.7); this.nextLook = t + this.rndf(1.5, 4);
+    }
+  };
+  var canvas = document.getElementById('face'), ctx = canvas.getContext('2d');
+  function draw() {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    var parts = [face.prepare(0), face.prepare(1)];
+    var zs = face.mood === 5 ? [face.zShape(0), face.zShape(1)] : [];
+    for (var y = 0; y < H; y++) {
+      var yc = y + 0.5, out = [];
+      for (var i = 0; i < 2; i++) { eyeRow(parts[i][0], yc, out); blushRow(parts[i][1], yc, out); }
+      for (var k = 0; k < zs.length; k++) zRow(zs[k], yc, out);
+      if (!out.length) continue;
+      out.sort(function (p, q) { return p[3] - q[3]; });
+      for (var j = 0; j < out.length; j++) { ctx.fillStyle = out[j][2]; ctx.fillRect(out[j][0], y, out[j][1] - out[j][0], 1); }
+    }
+  }
+  var last = performance.now(), noise = 0;
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    noise += dt * (8 + Math.random() * 10);
+    var target = speaking ? 0.45 + 0.55 * Math.abs(Math.sin(noise)) : 0;
+    face.talk += (target - face.talk) * (target > face.talk ? 0.6 : 0.25);
+    face.update(dt); draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.addEventListener('pointermove', function (e) {
+    var r = canvas.getBoundingClientRect();
+    var dx = (e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2), dy = (e.clientY - (r.top + r.height / 2)) / (window.innerHeight / 2);
+    face.look(Math.max(-1, Math.min(1, dx * 1.6)), Math.max(-1, Math.min(1, dy * 1.6)));
+    face.lookHold = face.time + 2.5;
+  }, { passive: true });
+
+  // ---------- mood buttons ----------
+  var root = document.documentElement, moodBox = document.getElementById('moods'), moodButtons = [];
+  var SHORT = ['Labes', 'Mrigel!', 'Mghboun', 'Harissa!', 'Ya mimti!', 'Na3sen', 'Mghrom', 'Chkoun?!', 'Dawkha!'];
+  var MEAN = ['calm', 'happy', 'sad', 'angry', 'surprised', 'sleepy', 'in love', 'suspicious', 'dizzy'];
+  SHORT.forEach(function (name, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.title = MEAN[i]; b.setAttribute('aria-pressed', 'false');
+    b.style.setProperty('--c', GLOW[i]);
+    b.innerHTML = '<i style="background:' + GLOW[i] + '"></i>';
+    b.appendChild(document.createTextNode(name));
+    b.setAttribute('aria-label', name + ' (' + MEAN[i] + ')');
+    b.addEventListener('click', function () { setMood(MOOD_KEYS[i]); post('/api/mood', { key: MOOD_KEYS[i] }); });
+    moodBox.appendChild(b); moodButtons.push(b);
+  });
+  var shownMood = null;
+  function setMood(key) {
+    var i = MOOD_KEYS.indexOf(key); if (i < 0 || key === shownMood) return;
+    shownMood = key;
+    if (i === 8) face.shake(); else face.setMood(i);
+    if (i === 7) face.look(1, 0); else if (i === 2 || i === 5) face.look(0, 0.5);
+    face.lookHold = face.time + 2;
+    root.style.setProperty('--mood', GLOW[i]);
+    document.getElementById('mood-name').textContent = SHORT[i];
+    moodButtons.forEach(function (b, j) { b.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+  }
+  setMood('n');
+
+  // ---------- talking to the talker ----------
+  function post(path, body) {
+    return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); });
+  }
+  var toastEl = document.getElementById('toast'), toastT;
+  function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 3200); }
+
+  var log = document.getElementById('log'), empty = document.getElementById('empty');
+  var seen = {}, mine = {}, since = 0, plugged = null, typingEl = null;
+  function nearBottom() { return log.scrollHeight - log.scrollTop - log.clientHeight < 120; }
+  function isArabic(s) { return /[؀-ۿ]/.test(s || ''); }
+  function clock(t) { var d = new Date(t * 1000); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function add(node) {
+    var stick = nearBottom();
+    if (empty) { empty.remove(); empty = null; }
+    if (typingEl && node !== typingEl) log.insertBefore(node, typingEl); else log.appendChild(node);
+    if (stick) log.scrollTop = log.scrollHeight;
+  }
+  function bubble(cls, text, metaNodes, color) {
+    var m = document.createElement('div'); m.className = 'msg ' + cls;
+    if (color) m.style.setProperty('--c', color);
+    var b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
+    b.setAttribute('dir', isArabic(text) ? 'rtl' : 'auto');
+    if (isArabic(text)) b.setAttribute('lang', 'ar');
+    m.appendChild(b);
+    if (metaNodes && metaNodes.length) {
+      var meta = document.createElement('div'); meta.className = 'meta';
+      metaNodes.forEach(function (n) { meta.appendChild(typeof n === 'string' ? document.createTextNode(n) : n); });
+      m.appendChild(meta);
+    }
+    return m;
+  }
+  function chip(key) {
+    var i = MOOD_KEYS.indexOf(key); if (i < 0) return null;
+    var c = document.createElement('span'); c.className = 'chip'; c.style.setProperty('--c', GLOW[i]);
+    c.innerHTML = '<i></i>'; c.appendChild(document.createTextNode(SHORT[i])); return c;
+  }
+  function render(ev) {
+    if (seen[ev.id]) return; seen[ev.id] = 1;
+    if (ev.who === 'you') {
+      if (ev.cid && mine[ev.cid]) return;           // already shown when you sent it
+      add(bubble('you' + (ev.kind === 'say' ? ' say' : ''), ev.text, [clock(ev.t)]));
+      return;
+    }
+    if (ev.who === 'system') { var s = document.createElement('div'); s.className = 'sys'; s.textContent = ev.text; add(s); return; }
+    var i = MOOD_KEYS.indexOf(ev.mood), color = i >= 0 ? GLOW[i] : null, words = [], meta = [];
+    if (ev.kind === 'reply') words.push((ev.mind || '') + (ev.seconds ? ' · ' + ev.seconds + ' s' : ''));
+    if (ev.kind === 'said') words.push('said your words');
+    if (ev.kind === 'auto') words.push('on his own');
+    if (ev.kind === 'error') words.push('his mind could not answer' + (ev.error ? ': ' + ev.error.slice(0, 120) : ''));
+    if (ev.voiceless && ev.kind !== 'error') words.push(plugged ? 'not spoken' : 'not spoken: he is unplugged');
+    words.push(clock(ev.t));
+    var c = chip(ev.mood); if (c) meta.push(c);
+    meta.push(words.filter(Boolean).join(' · '));
+    var cls = 'him' + (ev.kind === 'auto' ? ' auto' : '') + (ev.kind === 'error' ? ' error' : '');
+    add(bubble(cls, ev.text, meta, color));
+  }
+  function showTyping(on) {
+    if (on && !typingEl) {
+      typingEl = document.createElement('div'); typingEl.className = 'msg him typing';
+      typingEl.innerHTML = '<div class="bubble" aria-label="Masoud is thinking"><i></i><i></i><i></i></div>';
+      add(typingEl);
+    } else if (!on && typingEl) { typingEl.remove(); typingEl = null; }
+  }
+
+  var linkEl = document.getElementById('link'), linkText = document.getElementById('link-text');
+  var doing = document.getElementById('doing'), doingText = document.getElementById('doing-text');
+  var pending = 0;
+  function apply(s) {
+    s.events.forEach(function (ev) { render(ev); since = Math.max(since, ev.id); });
+    plugged = s.port;
+    linkEl.className = 'pill ' + (s.port ? 'on' : '');
+    linkText.textContent = '';
+    function part(text, cls) { var e = document.createElement('span'); if (cls) e.className = cls; e.textContent = text; linkText.appendChild(e); }
+    if (s.port) { part('Plugged in · ', 'long'); part(s.port); } else { part('Unplugged'); part(': text only', 'long'); }
+    document.getElementById('mind-name').textContent = s.mind || '…';
+    thinking = s.thinking || pending > 0; speaking = s.speaking;
+    showTyping(thinking);
+    doing.classList.toggle('talking', speaking);
+    doingText.textContent = speaking ? 'Talking' : thinking ? 'Thinking…' : s.port ? 'Listening' : 'Waiting to be plugged in';
+    if (s.mood && !thinking) setMood(s.mood);
+  }
+  var down = false;
+  function poll() {
+    fetch('/api/state?since=' + since, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) {
+      if (down) { down = false; toast('Masoud is back.'); }
+      apply(s);
+    }).catch(function () {
+      down = true; linkEl.className = 'pill off'; linkText.textContent = 'Talker not running';
+      doingText.textContent = 'Start it: python tools/masoud_live.py';
+    }).finally(function () { setTimeout(poll, speaking || thinking ? 350 : 700); });
+  }
+  poll();
+
+  // ---------- sending ----------
+  var form = document.getElementById('composer'), ta = document.getElementById('text'), sendBtn = document.getElementById('send');
+  var modeKey = 'masoud.mode';
+  try { var m = localStorage.getItem(modeKey); if (m) form.mode.value = m; } catch (e) {}
+  form.addEventListener('change', function (e) { if (e.target.name === 'mode') try { localStorage.setItem(modeKey, form.mode.value); } catch (x) {} });
+  function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(180, ta.scrollHeight + 2) + 'px'; }
+  ta.addEventListener('input', grow);
+  ta.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
+  });
+  function send(text) {
+    text = (text || '').trim(); if (!text) return;
+    var mode = form.mode.value, say = mode === 'say' || text.charAt(0) === '!';
+    var cid = Math.random().toString(36).slice(2);
+    mine[cid] = 1;
+    add(bubble('you' + (say ? ' say' : ''), say && text.charAt(0) === '!' ? text.slice(1).trim() : text, [clock(Date.now() / 1000)]));
+    if (!say) { pending++; thinking = true; showTyping(true); doingText.textContent = 'Thinking…'; }
+    sendBtn.disabled = true;
+    post('/api/chat', { text: text, mode: mode, cid: cid }).then(function (ev) {
+      if (ev && ev.id) render(ev);
+    }).catch(function () { toast('Masoud’s talker is not running.'); })
+      .finally(function () {
+        if (!say) pending = Math.max(0, pending - 1);
+        if (!pending) { thinking = false; showTyping(false); }
+        sendBtn.disabled = false;
+      });
+  }
+  form.addEventListener('submit', function (e) { e.preventDefault(); var t = ta.value; ta.value = ''; grow(); send(t); ta.focus(); });
+  document.getElementById('suggest').addEventListener('click', function (e) { if (e.target.closest('button')) send(e.target.closest('button').textContent); });
+
+  // ---------- his mind ----------
+  var dlg = document.getElementById('mind'), box = document.getElementById('minds');
+  function tagFor(k, info) {
+    var a = info.available[k];
+    if (k === 'groq' || k === 'claude-api') return a ? ['ready', 'key set'] : ['', 'needs a key'];
+    if (k === 'claude') return a ? ['ready', 'installed'] : ['', 'not installed'];
+    if (k === 'ollama') return a ? ['ready', 'running'] : ['', 'not running'];
+    return ['ready', 'always'];
+  }
+  function fillMind(info) {
+    box.querySelectorAll('label').forEach(function (l) { l.remove(); });
+    [['auto', 'Auto', 'The best one that works, in this order: Claude API, Groq, Claude CLI, Ollama, Pet. Now: ' + info.label + '.']]
+      .concat(Object.keys(info.labels).map(function (k) { return [k, info.labels[k], DESC[k] || '']; }))
+      .forEach(function (o) {
+        var l = document.createElement('label'); l.className = 'mind';
+        var t = o[0] === 'auto' ? ['ready', 'recommended'] : tagFor(o[0], info);
+        l.innerHTML = '<input type="radio" name="mind"><b></b><span class="tag ' + t[0] + '"></span><small></small>';
+        l.querySelector('input').value = o[0]; l.querySelector('input').checked = info.choice === o[0];
+        l.querySelector('b').textContent = o[1]; l.querySelector('.tag').textContent = t[1]; l.querySelector('small').textContent = o[2];
+        box.appendChild(l);
+      });
+    document.getElementById('groq-key').placeholder = info.has_groq_key ? 'saved (type to replace)' : 'gsk_…';
+    document.getElementById('anthropic-key').placeholder = info.has_anthropic_key ? 'saved (type to replace)' : 'sk-ant-…';
+    document.getElementById('mind-name').textContent = info.label;
+  }
+  function loadMind() { return fetch('/api/mind', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(fillMind); }
+  document.getElementById('mind-open').addEventListener('click', function () { loadMind().catch(function () {}); dlg.showModal(); });
+  document.getElementById('mind-save').addEventListener('click', function () {
+    var picked = box.querySelector('input:checked');
+    var body = { mind: picked ? picked.value : 'auto', groq_key: document.getElementById('groq-key').value, anthropic_key: document.getElementById('anthropic-key').value };
+    post('/api/mind', body).then(function (info) {
+      fillMind(info); document.getElementById('groq-key').value = ''; document.getElementById('anthropic-key').value = '';
+      dlg.close(); toast('His mind: ' + info.label);
+    }).catch(function () { toast('Could not save: is the talker running?'); });
+  });
+  document.getElementById('forget').addEventListener('click', function () {
+    post('/api/forget', {}).then(function () { dlg.close(); toast('He forgot your conversation.'); });
+  });
+  loadMind().catch(function () {});
+  ta.focus();
+})();
+</script>
+</body>
+</html>

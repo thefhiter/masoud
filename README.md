@@ -10,7 +10,7 @@ in the cloud, or none at all. He speaks Derja first. *Kol nhar, mas3oud*: every 
 |---|---|
 | [`brand/`](brand/) | Logo files as plain SVG paths, and [`launch-book.html`](brand/launch-book.html), the cinematic brand and launch book (open it in a browser): a live 3D Masoud whose eyes follow your pointer, name, logo rules, colors, type, Derja voice, first-run setup, parts, pricing, 90-day plan. |
 | [`firmware/masoud_uno/`](firmware/masoud_uno/) | The working prototype: Masoud's face on an Arduino Uno + Waveshare 1.8" ST7735S screen. |
-| [`tools/`](tools/) | `emo_preview.cpp` renders the face on a PC with the same code, `make_splash.py` builds the boot wordmark, `make_logos.py` builds the logo SVGs. |
+| [`tools/`](tools/) | `masoud_live.py` keeps him talking and serves the chat page (`masoud_chat.html`), `masoud_mind.py` is his AI mind, `masoud_say.py` makes him say anything. `emo_preview.cpp` renders the face on a PC with the same code, `make_splash.py` builds the boot wordmark, `make_logos.py` builds the logo SVGs. |
 | [`docs/`](docs/) | Images used here. |
 
 ## The face today
@@ -78,7 +78,7 @@ say it, or a mood key (`h s a u z l ? d n`). Lines are cached, so he answers ins
 
 ```sh
 pip install edge-tts pyserial          # and ffmpeg on PATH
-python tools/masoud_live.py            # he talks by himself; type to make him say anything
+python tools/masoud_live.py            # he talks by himself and answers you (chat page or here)
 python tools/masoud_live.py --install  # ...always, from every Windows start
 python tools/masoud_say.py "أسلامة! أنا مسعود" --mood h
 python tools/masoud_say.py "أسلامة" --preview hello.wav    # hear it without the robot
@@ -86,6 +86,38 @@ python tools/masoud_say.py "أسلامة" --preview hello.wav    # hear it witho
 
 Listen to [`docs/masoud-voice-sample.wav`](docs/masoud-voice-sample.wav) for what he sounds like
 (8 kHz, 8-bit, exactly what the robot plays).
+
+### Chat with him: his AI mind
+
+<img src="docs/masoud-chat.png" alt="The chat page: Masoud's live face on the left, a conversation on the right where he answers English and Arabizi messages in Derja with a mood on each answer">
+
+While `masoud_live.py` runs, open **http://127.0.0.1:8766** (`--install` puts a *Chat with Masoud*
+shortcut on the Desktop). Write in Derja, Arabizi, French or English: his mind answers in Derja
+written in Arabic letters, his face on the robot (and on the page) takes the answer's mood, and he
+says it out loud. *He says it* mode, or a message that starts with `!`, makes him say your words exactly.
+The mood buttons poke his face. If the background talker is running, `python tools/masoud_live.py`
+in a terminal chats through it too.
+
+The mind is `tools/masoud_mind.py`, the launch book's "choose his mind" on a PC. Pick it on the
+page (the *Mind* button) or in `%LOCALAPPDATA%\masoud\mind.json`. In *Auto*, he uses the first one
+that works and moves to the next one if it fails:
+
+| Mind | Needs | Speed |
+|---|---|---|
+| Claude API | your Anthropic key | about 1 s |
+| Groq (`openai/gpt-oss-120b`) | a free key from console.groq.com | under 1 s; if Groq retires a model he moves to the next |
+| Claude CLI | the `claude` CLI, signed in | a few s |
+| Ollama | Ollama running on this PC | depends on the PC |
+| Pet | nothing | canned answers |
+
+Keys stay on this PC and never go back to the page. The server only listens on 127.0.0.1 and
+refuses requests from other websites. From your message, his text shows in about 1 s and his
+voice starts after 3 to 5 s: the Tunisian voice takes about 2 s to render.
+
+```sh
+python tools/masoud_mind.py "Aslema, chnahwelek?"     # test his mind alone, no robot
+python tools/masoud_mind.py --chat --mind groq        # a console chat with one mind
+```
 
 ### Build and flash
 
