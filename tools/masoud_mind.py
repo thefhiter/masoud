@@ -72,6 +72,21 @@ EXAMPLES = [
 EXAMPLE_TURNS = [t for q, a in EXAMPLES for t in ({"role": "user", "content": q}, {"role": "assistant", "content": a})]
 CLI_PROMPT = PERSONA + "\n\nExamples:\n" + "\n".join(f"Them: {q}\nYou: {a}" for q, a in EXAMPLES)
 API_MINDS = ("claude-api", "groq", "ollama")
+# His own lines (nobody asked anything): one batch per call, a line per feeling + quiet-room chatter.
+MUSE_SYSTEM = PERSONA.splitlines()[0] + "\n" + PERSONA.splitlines()[3]
+MUSE = """Nobody asked you anything: write what you say ON YOUR OWN, out loud, to the person at your desk. Write every line in {language}.
+It is {clock}.{talk}{lately}
+You cannot see, hear or move: never describe things around you (no cups, windows, insects, light, sounds). Talk about yourself, your feelings and them.
+Short and punchy, 4 to 14 words, playful, a little dramatic, no emojis, every line different. One line each, format "key: sentence":
+h: you suddenly feel happy
+s: you feel a bit sad
+a: you are annoyed
+u: something surprised you
+z: you are sleepy
+l: you feel full of love for them
+?: you are suspicious of something
+d: they just shook you and you are dizzy
+Then 5 lines "c: sentence" for when the room has been quiet: a question about their day, a fun fact, a tiny joke, something about the time of day, a kind reminder.{follow}"""
 
 PET = {  # the "pet" mind: no AI, a few canned answers, in the language of the message
     "en": [("h", "Yay! Tell me more."), ("h", "You're the best!"), ("?", "Hmm? Say that again."), ("l", "I love you too!")],
@@ -143,6 +158,25 @@ def parse(reply):
     reply = re.sub(r"[*_#`~>|]", "", reply)
     reply = re.sub(r"\s+", " ", reply).strip()
     return mood, reply or "ممم..."
+
+
+def parse_muse(raw, lang):
+    """'h: ...' / 'c: [x] ...' lines -> [(key, mood, text)], only the ones in the right language."""
+    out = []
+    for line in (raw or "").splitlines():
+        m = re.match(r"^[\s\-*\d.)]*([nhsauzl?dc])\s*[:：]\s*(.+)$", line.strip(), re.I)
+        if not m:
+            continue
+        key = m.group(1).lower()
+        text = m.group(2)
+        if key == "c":                   # a face tag the model added anyway: "[h] ...", "h: ...", Arabic "h ..."
+            text = re.sub(r"^(\[[a-z?]\]|[nhsauzl?d]:)\s*" + (r"|^[a-z?]\s+" if lang == "ar" else ""), "", text.strip(), flags=re.I)
+        mood, said = parse(text)
+        mood = "n" if key == "c" else key
+        if len(said) < 4 or (detect_lang(said) == "ar") != (lang == "ar"):
+            continue
+        out.append((key, mood, said))
+    return out
 
 
 def post_json(url, body, headers, timeout=30):
@@ -360,16 +394,43 @@ class Mind:
             return f"[{mood}] {said}"
         return self._call(m, self.system(), EXAMPLE_TURNS + self.history + [{"role": "user", "content": text}])
 
-    def _call(self, m, system, msgs):
+    def muse(self, lang, lately=()):
+        """Lines he says on his own, written by an AI mind: -> ([(key, mood, text)], mind).
+        key = a mood key (said when his face takes that mood) or "c" (chatter when it is quiet).
+        Only the API minds: the CLI session would keep these in its chat history."""
+        with self.lock:
+            talk = list(self.history[-6:])
+        t = time.localtime()
+        part = "morning" if 5 <= t.tm_hour < 12 else "afternoon" if t.tm_hour < 18 else "evening" if t.tm_hour < 23 else "late at night"
+        prompt = MUSE.format(
+            language=LANGUAGES[lang] + (" (Modern Standard Arabic, Arabic letters, never a dialect)" if lang == "ar" else ""),
+            clock=f"{WEEKDAYS[t.tm_wday]} {part}",
+            talk=("\nYour chat with them lately:\n" + "\n".join(
+                f"{'Them' if x['role'] == 'user' else 'You'}: {x['content']}" for x in talk)) if talk else "",
+            follow=" Make 2 of them follow up on what they told you in your chat." if talk else "",
+            lately=("\nDo NOT repeat these, you said them already: " + " / ".join(lately[-12:])) if lately else "")
+        errors = []
+        for m in [x for x in self.order() if x in API_MINDS]:
+            try:
+                lines = parse_muse(self._call(m, MUSE_SYSTEM, [{"role": "user", "content": prompt}], 1500), lang)
+            except (MindError, KeyError, IndexError, TypeError, AttributeError) as e:
+                errors.append(f"{m}: {e}")
+                continue
+            if lines:
+                return lines, m
+            errors.append(f"{m}: no usable lines")
+        raise MindError("; ".join(errors) or "no AI mind for his own lines")
+
+    def _call(self, m, system, msgs, max_tokens=None):
         if m == "claude-api":
             r = post_json("https://api.anthropic.com/v1/messages",
                           {"model": self.cfg.get("anthropic_model", "claude-haiku-4-5-20251001"),
-                           "max_tokens": 200, "system": system, "messages": msgs},
+                           "max_tokens": max_tokens or 200, "system": system, "messages": msgs},
                           {"x-api-key": self.key("anthropic_key", "ANTHROPIC_API_KEY"),
                            "anthropic-version": "2023-06-01"})
             return "".join(c.get("text", "") for c in r.get("content", []))
         if m == "groq":
-            return self._groq(system, msgs)
+            return self._groq(system, msgs, max_tokens or 250)
         if m == "ollama":
             r = post_json("http://localhost:11434/api/chat",
                           {"model": self.cfg.get("ollama_model", "llama3.2"), "stream": False,
@@ -377,12 +438,12 @@ class Mind:
             return r["message"]["content"]
         raise MindError(f"unknown mind {m!r}")
 
-    def _groq(self, system, msgs):
+    def _groq(self, system, msgs, max_tokens=250):
         models = [self.cfg["groq_model"]] if self.cfg.get("groq_model") else []
         models += [x for x in GROQ_MODELS if x not in models]
         busy = False
         for model in models:
-            body = {"model": model, "max_tokens": 250, "temperature": 0.8,
+            body = {"model": model, "max_tokens": max_tokens, "temperature": 0.8,
                     "messages": [{"role": "system", "content": system}] + msgs}
             if "gpt-oss" in model:       # a reasoning model: think little, show none of it
                 body.update(reasoning_effort="low", include_reasoning=False)

@@ -68,11 +68,15 @@ PAM8403 L/R out -> the two speakers
   control. His eyes pulse while he talks. The Uno buffers 64 ms of speech (512 bytes), enough to ride
   out a hiccup on the PC: with 32 ms, one answer in five had a 25 ms click.
 
-**He always talks:** `tools/masoud_live.py` greets you, says a line on every mood change
-(*Grr! Don't make me angry!*, *Je t'adore !*, *أحبك كثيرا!*...), and after ~30 s of quiet says something
-by himself (water, a break, *why so quiet?*, good morning or good night by the clock), in the language he
-last spoke. Type a sentence to make him say it, or a mood key (`h s a u z l ? d n`). Lines are cached,
-so he answers instantly.
+**He always talks:** `tools/masoud_live.py` greets you, says a line on every mood change, and after
+~18 s of quiet says something by himself, in the language he last spoke. **His AI mind writes these lines**:
+one call returns a fresh batch (a line for each mood and five quiet-room lines: a question about your day,
+a fun fact, a tiny joke, the time of day, a kind reminder). The batch knows the weekday, the part of the day and
+what you just chatted about (*How did the CNC project turn out?*) and never repeats his last lines. Batches
+are voiced ahead of time, so every line still comes out at once. They are topped up whenever a mood runs
+out, at most one call per 40 s (a few % of Groq's free tier). When the mind is offline or on Pet, the fixed
+lines fill in (*Grr! Don't make me angry!*, *Je t'adore !*, *أحبك كثيرا!*...). The log marks AI lines `(ai)`.
+Type a sentence to make him say it, or a mood key (`h s a u z l ? d n`).
 
 - `python tools/masoud_live.py --install`: start with Windows in the background; it waits for him to
   be plugged in and reconnects after unplugging (log in `%LOCALAPPDATA%\masoud\live.log`).

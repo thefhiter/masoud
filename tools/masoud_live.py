@@ -13,8 +13,11 @@ you can type to him too; when the background one is already running, the
 console chats through it.
 
 On his own he greets you, says a line on every mood change, and when
-it has been quiet for a while he says something: water, a break, "why so
-quiet?", good morning or good night by the clock, in the language he last spoke.
+it has been quiet for a while he says something: a question, a fun fact, a joke,
+a remark on the time of day, in the language he last spoke. His AI mind writes
+these lines in batches (knowing the time and what you talked about) and they are
+voiced ahead of time, so they come out at once; the fixed lines below fill in
+while it is offline or on Pet.
 
 In the background (--wait, which --install uses) it waits for Masoud to be
 plugged in and reconnects if he is unplugged. It holds his USB port while it
@@ -117,8 +120,9 @@ def speakable(text):
     return re.sub(r"\bMasoud\b", "Massoud", text, flags=re.I)
 
 
-def voice_clip(text, voice, pitch):
-    """8 kHz u8 audio for text, from the cache or freshly rendered."""
+def voice_clip(text, voice, pitch, cache=True):
+    """8 kHz u8 audio for text, from the cache or freshly rendered (and kept only with cache:
+    his AI-written lines are said once, so they would just pile up)."""
     text = speakable(text)
     key = hashlib.sha1(f"v3|{voice}|{pitch}|{text}".encode()).hexdigest()[:16]   # v3: louder processing
     path = CACHE / f"{key}.u8"
@@ -128,8 +132,9 @@ def voice_clip(text, voice, pitch):
         mp3 = Path(tmp) / "say.mp3"
         ms.tts(text, voice, mp3)
         data = ms.to_u8(mp3, pitch)
-    CACHE.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
+    if cache:
+        CACHE.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
     return data
 
 
@@ -146,6 +151,66 @@ def pick_chatter(recent, lang):
         return clock_line(lang)
     choices = [c for c in CHATTER[lang] if c not in recent] or CHATTER[lang]
     return random.choice(choices)
+
+
+class Muse:
+    """His own lines, written by his AI mind in batches (one line per mood + quiet-room
+    chatter) and voiced ahead of time, so a mood comment comes out at once."""
+    PER_KEY = 3                   # lines kept per mood / for chatter
+    GAP, BACKOFF = 40, 180        # seconds between batches, and after a failed one
+
+    def __init__(self, hub, args):
+        self.hub, self.args = hub, args
+        self.ready = []           # [(lang, key, mood, text, clip)]
+        self.lately = []          # what he said on his own lately: the mind must not repeat it
+        self.lock = threading.Lock()
+        self.next_batch = 0.0
+        threading.Thread(target=self.worker, daemon=True).start()
+
+    def take(self, key, lang):
+        """-> (mood, text, clip) of a ready line for this mood key (or "c"), else None."""
+        with self.lock:
+            self.ready = [r for r in self.ready if r[0] == lang]    # he changed language: old ones go
+            for i, r in enumerate(self.ready):
+                if r[1] == key:
+                    return self.ready.pop(i)[2:]
+        return None
+
+    def said(self, text):
+        self.lately = (self.lately + [text])[-16:]
+
+    def low(self, lang):
+        with self.lock:
+            mine = [r[1] for r in self.ready if r[0] == lang]
+        return mine.count("c") < 2 or not set(MOOD_KEYS[1:]) <= set(mine)   # every speaking mood has a line
+
+    def worker(self):
+        while True:
+            time.sleep(2)
+            hub, lang = self.hub, self.hub.lang
+            if not hub.port or hub.mind.choice == "pet" or time.time() < self.next_batch or not self.low(lang):
+                continue
+            self.next_batch = time.time() + self.GAP
+            try:
+                lines, used = hub.mind.muse(lang, self.lately)
+            except mm.MindError as e:
+                say_print(f"  (his own lines stay the fixed ones for now: {e})")
+                self.next_batch = time.time() + self.BACKOFF
+                continue
+            say_print(f"  {mm.LABELS.get(used, used)} wrote {len(lines)} new lines for him ({lang})")
+            for key, mood, text in lines:
+                hub.quiet()
+                if hub.lang != lang:
+                    break
+                try:
+                    clip = voice_clip(text, self.args.voice, self.args.pitch, cache=False)
+                except Exception:
+                    break                 # no voice now (internet?): try again with the next batch
+                with self.lock:
+                    self.ready.append((lang, key, mood, text, clip))
+                    same = [r for r in self.ready if r[0] == lang and r[1] == key]
+                    if len(same) > self.PER_KEY:
+                        self.ready.remove(same[0])
 
 
 # ---- what the chat page sees ------------------------------------------------------
@@ -502,6 +567,7 @@ def live(args):
             hub.speaking = False
 
     recent = []
+    muse = Muse(hub, args)
     while True:
         port = connect(args.port)
         if not port:
@@ -530,18 +596,30 @@ def live(args):
                         hub.mood = MOOD_KEYS[MOOD_NAMES.index(mood)]
                         now = time.time()
                         if mood in LINES and now - last_spoke > args.quiet_gap and now > quiet_moods_until:
-                            text = LINES[mood][hub.lang]
+                            got = muse.take(hub.mood, hub.lang)
+                            if got:
+                                _, text, clip = got
+                            else:
+                                text = LINES[mood][hub.lang]
+                                clip = voice_clip(text, args.voice, args.pitch)
                             hub.add("masoud", text, "auto", mood=hub.mood)
-                            speak(port, voice_clip(text, args.voice, args.pitch), f"[{mood}] {text}")
+                            speak(port, clip, f"[{mood}] {text}" + (" (ai)" if got else ""))
+                            muse.said(text)
                             last_spoke, buf = time.time(), b""
                             next_chat = last_spoke + args.every * random.uniform(0.7, 1.3)
                 if hub.thinking:                 # an answer is on its way: no chatter now
                     next_chat = max(next_chat, time.time() + 5)
                 if args.every > 0 and time.time() > next_chat:
-                    text = pick_chatter(recent, hub.lang)
-                    recent = (recent + [text])[-4:]
+                    got = muse.take("c", hub.lang)
+                    if got:
+                        _, text, clip = got
+                    else:
+                        text = pick_chatter(recent, hub.lang)
+                        recent = (recent + [text])[-4:]
+                        clip = voice_clip(text, args.voice, args.pitch)
                     hub.add("masoud", text, "auto")
-                    speak(port, voice_clip(text, args.voice, args.pitch), text)
+                    speak(port, clip, text + (" (ai)" if got else ""))
+                    muse.said(text)
                     last_spoke, buf = time.time(), b""
                     next_chat = last_spoke + args.every * random.uniform(0.7, 1.3)
                 try:
@@ -578,7 +656,7 @@ def main():
     ap.add_argument("--port", help="COM port (found automatically otherwise)")
     ap.add_argument("--voice", default=ms.VOICE)
     ap.add_argument("--pitch", type=float, default=1.12)
-    ap.add_argument("--every", type=float, default=30, help="seconds of quiet before he talks on his own (0 = never)")
+    ap.add_argument("--every", type=float, default=18, help="seconds of quiet before he talks on his own (0 = never)")
     ap.add_argument("--quiet-gap", type=float, default=2.0, help="seconds after speaking before he comments on a mood")
     ap.add_argument("--wait", action="store_true", help="wait for Masoud and reconnect after unplugging")
     ap.add_argument("--open", action="store_true", help="open the chat page in the browser")
